@@ -1,0 +1,118 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:productname",
+ "creation": "2024-12-19 11:17:22.484099",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "product_id",
+  "productname",
+  "category",
+  "source_site",
+  "size",
+  "unit_price",
+  "unit_name",
+  "original_unit_quantity",
+  "current_price",
+  "price_history",
+  "last_updated",
+  "last_checked"
+ ],
+ "fields": [
+  {
+   "fieldname": "category",
+   "fieldtype": "Data",
+   "label": "Category"
+  },
+  {
+   "fieldname": "source_site",
+   "fieldtype": "Data",
+   "label": "Source Site"
+  },
+  {
+   "fieldname": "size",
+   "fieldtype": "Data",
+   "label": "Size"
+  },
+  {
+   "fieldname": "unit_price",
+   "fieldtype": "Currency",
+   "label": "Unit Price"
+  },
+  {
+   "fieldname": "unit_name",
+   "fieldtype": "Data",
+   "label": "Unit Name"
+  },
+  {
+   "default": "1",
+   "fieldname": "original_unit_quantity",
+   "fieldtype": "Float",
+   "label": "Original Unit Quantity"
+  },
+  {
+   "default": "0",
+   "fieldname": "current_price",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Current Price",
+   "reqd": 1
+  },
+  {
+   "fieldname": "price_history",
+   "fieldtype": "Text",
+   "label": "Price History"
+  },
+  {
+   "fieldname": "last_updated",
+   "fieldtype": "Datetime",
+   "label": "Last Updated"
+  },
+  {
+   "fieldname": "last_checked",
+   "fieldtype": "Datetime",
+   "label": "Last Checked"
+  },
+  {
+   "fieldname": "productname",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Product Name",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "product_id",
+   "fieldtype": "Data",
+   "label": "Product ID"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-12-19 22:31:55.760885",
+ "modified_by": "Administrator",
+ "module": "Besty",
+ "name": "Product Item",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "show_title_field_in_link": 1,
+ "sort_field": "last_updated",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "productname"
+}
