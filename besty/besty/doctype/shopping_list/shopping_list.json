@@ -1,11 +1,11 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2024-12-20 22:48:48.805367",
+ "creation": "2024-12-20 23:13:15.679284",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "section_break_mkwx"
+  "section_break_akua"
  ],
 "fields": [
     {
@@ -39,7 +39,7 @@
 ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-12-20 22:54:59.648436",
+ "modified": "2024-12-20 23:13:15.679284",
  "modified_by": "Administrator",
  "module": "Besty",
  "name": "Shopping List",
