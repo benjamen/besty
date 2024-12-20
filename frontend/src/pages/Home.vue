@@ -1,4 +1,3 @@
-
 <template>
   <div class="min-h-screen bg-gray-50 py-4 sm:py-8">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 flex flex-col space-y-4 sm:space-y-6">
@@ -89,7 +88,6 @@
 
       <!-- Search Section -->
       <div class="bg-white rounded-lg shadow-sm p-4 sm:p-6">
-        <!-- Search and Category Filter -->
         <div class="mb-6 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
           <input
             v-model="searchQuery"
@@ -115,8 +113,7 @@
           </button>
         </div>
 
-        <!-- Product List -->
-       <div v-if="paginatedProducts.length" class="space-y-4">
+        <div v-if="paginatedProducts.length" class="space-y-4">
           <div
             v-for="product in paginatedProducts"
             :key="product.productname"
@@ -152,12 +149,10 @@
           </div>
         </div>
 
-        <!-- No Results Message -->
         <div v-else class="text-center text-gray-600 py-12">
           No products found. Try searching again.
         </div>
 
-        <!-- Pagination -->
         <div class="flex flex-col sm:flex-row justify-between items-center py-4 space-y-2 sm:space-y-0">
           <button
             v-if="hasPrevPage"
@@ -181,10 +176,13 @@
     </div>
   </div>
 </template>
+
+
 <script setup>
 import { ref, watch, computed } from 'vue'
 import { createListResource } from 'frappe-ui'
 import * as XLSX from 'xlsx'
+import fuzzysort from 'fuzzysort'
 
 const searchQuery = ref('')
 const selectedCategory = ref('')
@@ -217,11 +215,24 @@ const groupedItems = computed(() => {
   }, {})
 })
 
+// Fuzzy Search
 const filteredProducts = computed(() => {
-  return allProducts.value.filter((product) =>
-    (product.productname.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-    product.source_site.toLowerCase().includes(searchQuery.value.toLowerCase())) &&
-    (selectedCategory.value ? product.category === selectedCategory.value : true)
+  const query = searchQuery.value.trim().toLowerCase()
+  if (!query) return allProducts.value
+
+  // Perform fuzzy search
+  const results = fuzzysort.go(query, allProducts.value, {
+    keys: ['productname', 'source_site'],
+    threshold: -1000, // Adjust to control strictness of fuzzy matching
+    all: true,
+  })
+
+  // Extract matched products
+  const matchedProducts = results.map((result) => result.obj)
+
+  // Filter by category if selected
+  return matchedProducts.filter((product) =>
+    selectedCategory.value ? product.category === selectedCategory.value : true
   )
 })
 
@@ -275,7 +286,7 @@ const removeFromList = (product) => {
 
 const exportToXLS = () => {
   const exportData = []
-  
+
   Object.entries(groupedItems.value).forEach(([source, group]) => {
     exportData.push({
       productname: `=== ${source} ===`,
@@ -283,21 +294,21 @@ const exportToXLS = () => {
       quantity: '',
       total: ''
     })
-    
+
     group.forEach(item => {
       exportData.push({
         ...item,
         total: item.current_price * item.quantity
       })
     })
-    
+
     exportData.push({
       productname: 'Subtotal',
       current_price: '',
       quantity: '',
       total: getGroupSubtotal(group)
     })
-    
+
     exportData.push({
       productname: '',
       current_price: '',
@@ -305,7 +316,7 @@ const exportToXLS = () => {
       total: ''
     })
   })
-  
+
   exportData.push({
     productname: 'GRAND TOTAL',
     current_price: '',
