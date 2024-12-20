@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_import": 1,
  "allow_rename": 1,
  "autoname": "field:productname",
  "creation": "2024-12-19 11:17:22.484099",
@@ -90,7 +91,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-12-19 22:31:55.760885",
+ "modified": "2024-12-19 22:58:20.376499",
  "modified_by": "Administrator",
  "module": "Besty",
  "name": "Product Item",

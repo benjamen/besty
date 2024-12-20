@@ -4,10 +4,9 @@
   "description": "Besty",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "postinstall": "cd Home && yarn install",
-    "dev": "cd Home && yarn dev",
-    "build": "cd Home && yarn build"
+    "postinstall": "cd frontend && yarn install",
+    "dev": "cd frontend && yarn dev",
+    "build": "cd frontend && yarn build"
   },
   "keywords": [],
   "author": "",
