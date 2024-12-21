@@ -243,7 +243,6 @@ const deleteItemFromList = async (itemToDelete) => {
 
     if (!response) {
       alert('Item deleted successfully!');
-      // Optionally, refresh the shopping list or update the local state
       emit('update:items', props.items.filter(i => i.productname !== itemToDelete.name)); // Update the UI
     } else {
       alert('Failed to delete item. Please check the console for details.');
@@ -265,9 +264,22 @@ const removeItem = async (item) => {
 
   // Emit the event to the parent component to remove the item
   emit('remove-item', item); // Emit the item to be removed
+
+  // Automatically save the current list after removing the item
+  await saveCurrentList();
 };
 
 const handleListChange = async () => {
+  if (props.items.length > 0) {
+    const confirmChange = confirm('You have unsaved changes. Please save your list before switching.');
+    if (!confirmChange) {
+      return; // Prevent changing the list if the user cancels
+    }
+  }
+
+  // Clear the current items before loading the new list
+  emit('update:items', []); // Clear the items in the parent component
+
   if (currentListName.value) {
     try {
       const shoppingListResource = createResource({
@@ -276,9 +288,9 @@ const handleListChange = async () => {
           doctype: 'Shopping List',
           name: currentListName.value
         }
-      })
+      });
       
-      await shoppingListResource.fetch()
+      await shoppingListResource.fetch();
 
       if (shoppingListResource.data && shoppingListResource.data.shopping_items) {
         const transformedItems = await Promise.all(shoppingListResource.data.shopping_items.map(async (item) => {
@@ -288,9 +300,9 @@ const handleListChange = async () => {
               doctype: 'Product Item',
               name: item.product
             }
-          })
+          });
           
-          await productResource.fetch()
+          await productResource.fetch();
 
           return {
             name: item.product,
@@ -298,27 +310,19 @@ const handleListChange = async () => {
             current_price: item.price,
             quantity: item.quantity,
             source_site: productResource.data.source_site
-          }
-        }))
-        emit('update:items', transformedItems)
+          };
+        }));
+        emit('update:items', transformedItems); // Update the items with the new list
       } else {
-        console.error('No shopping_items found in the fetched shopping list.')
+        console.error('No shopping_items found in the fetched shopping list.');
       }
     } catch (error) {
-      console.error('Error loading shopping list:', error)
+      console.error('Error loading shopping list:', error);
     }
   }
 }
 
 onMounted(async () => {
-  try {
-    await shoppingLists.fetch()
-    if (shoppingLists.data.length > 0) {
-      currentListName.value = shoppingLists.data[0].name; // Select the first list
-      await handleListChange(); // Load the items for the selected list
-    }
-  } catch (error) {
-    console.error('Error fetching shopping lists:', error)
-  }
+  await shoppingLists.fetch()
 })
 </script>
