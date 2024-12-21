@@ -1,162 +1,123 @@
 <template>
-  <div class="container mx-auto p-6">
-    <h2 class="text-2xl font-semibold mb-4">Manage Shopping Lists</h2>
-
-    <!-- List of shopping lists -->
-    <div class="bg-white shadow-md rounded-lg p-4 mb-6">
-      <h3 class="text-xl font-medium mb-2">My Shopping Lists</h3>
-      <ul class="list-disc list-inside">
-        <li v-for="list in shoppingLists" :key="list.name" class="mb-2">
-          <span>{{ list.list_name }}</span>
-          <div class="mt-2 flex space-x-2">
-            <button @click="viewShoppingList(list.name)" class="bg-blue-500 text-white px-4 py-2 rounded">View</button>
-            <button @click="editShoppingList(list.name)" class="bg-yellow-500 text-white px-4 py-2 rounded">Edit</button>
-          </div>
-        </li>
-      </ul>
-      <button @click="createNewShoppingList" class="bg-green-500 text-white px-4 py-2 rounded">Create New List</button>
+  <div class="container mx-auto p-6 space-y-6">
+    <div class="flex items-center justify-between">
+      <h2 class="text-3xl font-semibold">Shopping Lists</h2>
+      <button @click="createNewShoppingList" class="bg-blue-500 text-white px-4 py-2 rounded">Add New List</button>
     </div>
 
-    <!-- Add/Edit Shopping List -->
-    <div v-if="editingList" class="bg-white shadow-md rounded-lg p-4">
-      <h3 class="text-xl font-medium mb-4">{{ isEditing ? 'Edit Shopping List' : 'New Shopping List' }}</h3>
-      <input v-model="currentList.list_name" placeholder="List Name" class="w-full p-2 border border-gray-300 rounded mb-4" />
-      
-      <table class="w-full table-auto border-collapse border border-gray-400">
-        <thead>
-          <tr>
-            <th class="border border-gray-300 px-4 py-2">Product Name</th>
-            <th class="border border-gray-300 px-4 py-2">Quantity</th>
-            <th class="border border-gray-300 px-4 py-2">Unit Price</th>
-            <th class="border border-gray-300 px-4 py-2">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="(item, index) in currentList.products" :key="index">
-            <td class="border border-gray-300 px-4 py-2">{{ item.productname }}</td>
-            <td class="border border-gray-300 px-4 py-2">
-              <input v-model.number="item.quantity" type="number" min="1" class="w-full p-2 border border-gray-300 rounded" />
-            </td>
-            <td class="border border-gray-300 px-4 py-2">
-              <input v-model.number="item.unit_price" type="number" min="0" step="0.01" class="w-full p-2 border border-gray-300 rounded" />
-            </td>
-            <td class="border border-gray-300 px-4 py-2">
-              <button @click="removeProduct(index)" class="bg-red-500 text-white px-4 py-2 rounded">Remove</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <button @click="addProduct" class="bg-blue-500 text-white px-4 py-2 rounded mt-4">Add Product</button>
-      <div class="mt-4 space-x-2">
-        <button @click="saveShoppingList" class="bg-green-500 text-white px-4 py-2 rounded">Save List</button>
-        <button @click="cancelEditing" class="bg-gray-500 text-white px-4 py-2 rounded">Cancel</button>
+    <ul class="divide-y divide-gray-200">
+      <!-- Loop through shopping lists and display names -->
+      <li v-for="(list, index) in shoppingLists.data || []" :key="list.name" class="flex justify-between items-center py-4">
+        <span class="text-xl">{{ list.list_name }}</span>
+        <div class="space-x-2">
+          <button @click="editShoppingList(list.name)" class="bg-yellow-500 text-white px-3 py-1 rounded">Edit</button>
+          <button @click="removeShoppingList(list.name)" class="bg-red-500 text-white px-3 py-1 rounded">Remove</button>
+        </div>
+      </li>
+    </ul>
+
+    <p v-if="(shoppingLists.data || []).length === 0" class="text-center text-gray-500">No shopping lists found.</p>
+
+    <button @click="goBack" class="bg-gray-500 text-white px-4 py-2 rounded mt-4">Back</button>
+
+    <!-- Add/Edit Shopping List Modal -->
+    <div v-if="editingList" class="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center">
+      <div class="bg-white rounded-lg shadow-lg p-6 space-y-4 w-full max-w-md">
+        <h3 class="text-2xl font-semibold">{{ isEditing ? 'Edit Shopping List' : 'New Shopping List' }}</h3>
+        <input v-model="currentList.list_name" :disabled="isEditing" placeholder="List Name" class="w-full p-2 border border-gray-300 rounded mb-4" />
+        <div class="flex justify-end space-x-2">
+          <button @click="saveShoppingList" class="bg-green-500 text-white px-4 py-2 rounded">Save</button>
+          <button @click="cancelEditing" class="bg-gray-500 text-white px-4 py-2 rounded">Cancel</button>
+        </div>
       </div>
     </div>
   </div>
 </template>
+
 <script setup>
-import { ref } from 'vue'
-import { createResource } from 'frappe-ui'
+import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { createListResource } from 'frappe-ui';
 
-const shoppingLists = ref([])
-const currentList = ref({
-  list_name: '',
-  products: [],
-})
-const editingList = ref(false)
-const isEditing = ref(false)
+const router = useRouter();
+const shoppingLists = createListResource({
+  doctype: 'Shopping List',
+  fields: ['name', 'list_name'],
+  orderBy: 'creation desc',
+  start: 0,
+  pageLength: 5,
+});
 
-// Create a resource for fetching shopping lists
-let shoppingListResource = createResource({
-  url: '/api/method/frappe.client.get_list',
-  params: {
-    doctype: 'Shopping List',
-    filters: {
-      owner: 'current_user', // Replace 'current_user' with the actual session user
-    },
-  },
-})
+const currentList = ref({ list_name: '' });
+const editingList = ref(false);
+const isEditing = ref(false);
+const notification = ref('');
 
-// Fetch all shopping lists
 const fetchShoppingLists = async () => {
   try {
-    const response = await shoppingListResource.fetch()
-    shoppingLists.value = response.message || []
+    await shoppingLists.fetch();
   } catch (error) {
-    console.error('Error fetching shopping lists:', error)
+    console.error('Error fetching shopping lists:', error);
   }
-}
+};
 
-// View shopping list
-const viewShoppingList = async (name) => {
-  try {
-    const response = await shoppingListResource.fetch({ params: { doctype: 'Shopping List', name } })
-    currentList.value = response.message
-    editingList.value = true
-    isEditing.value = false
-  } catch (error) {
-    console.error('Error viewing shopping list:', error)
-  }
-}
-
-// Edit shopping list
-const editShoppingList = async (name) => {
-  try {
-    const response = await shoppingListResource.fetch({ params: { doctype: 'Shopping List', name } })
-    currentList.value = response.message
-    editingList.value = true
-    isEditing.value = true
-  } catch (error) {
-    console.error('Error editing shopping list:', error)
-  }
-}
-
-// Create a new shopping list
 const createNewShoppingList = () => {
-  currentList.value = {
-    list_name: '',
-    products: [],
+  currentList.value = { list_name: '' };
+  isEditing.value = false;
+  editingList.value = true;
+};
+
+const editShoppingList = (name) => {
+  const list = shoppingLists.data?.find(list => list.name === name);
+  if (list) {
+    currentList.value = { ...list };
+    isEditing.value = true;
+    editingList.value = true;
   }
-  editingList.value = true
-  isEditing.value = false
-}
+};
 
-// Add a product
-const addProduct = () => {
-  currentList.value.products.push({
-    productname: '',
-    quantity: 1,
-    unit_price: 0,
-  })
-}
-
-// Remove a product
-const removeProduct = (index) => {
-  currentList.value.products.splice(index, 1)
-}
-
-// Save shopping list
 const saveShoppingList = async () => {
   try {
-    let response;
     if (isEditing.value) {
-      response = await shoppingListResource.save({ data: { ...currentList.value, name: currentList.value.name } })
+      await shoppingLists.setValue.submit({
+        name: currentList.value.name,
+        list_name: currentList.value.list_name,
+      });
     } else {
-      response = await shoppingListResource.insert({ data: currentList.value })
+      currentList.value.name = `shopping_list_${Date.now()}`;
+      await shoppingLists.insert.submit(currentList.value);
     }
-    if (response.message) {
-      editingList.value = false
-      fetchShoppingLists()
-    }
+    editingList.value = false;
+    fetchShoppingLists();
+    notification.value = 'Shopping list saved successfully!';
+    setTimeout(() => {
+      notification.value = '';
+    }, 3000);
   } catch (error) {
-    console.error('Error saving shopping list:', error)
+    console.error('Error saving shopping list:', error);
   }
-}
+};
 
-// Cancel editing
+const removeShoppingList = async (name) => {
+  try {
+    await shoppingLists.delete.submit(name);
+    fetchShoppingLists();
+    notification.value = 'Shopping list removed successfully!';
+    setTimeout(() => {
+      notification.value = '';
+    }, 3000);
+  } catch (error) {
+    console.error('Error removing shopping list:', error);
+  }
+};
+
 const cancelEditing = () => {
-  editingList.value = false
-}
+  editingList.value = false;
+};
 
-fetchShoppingLists()
+const goBack = () => {
+  router.push({ name: 'Home' });
+};
+
+onMounted(fetchShoppingLists);
 </script>
