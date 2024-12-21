@@ -1,4 +1,3 @@
-// pages/Home.vue
 <template>
   <div class="max-w-4xl mx-auto py-8">
     <h1 class="text-3xl font-bold text-gray-800 mb-4">Welcome to Besty</h1>
@@ -134,9 +133,11 @@ const addToList = (product) => {
 }
 
 const removeFromList = (product) => {
+  console.log('Removing item:', product); // Log for debugging
   selectedItems.value = selectedItems.value.filter(
     (item) => item.productname !== product.productname
-  )
+  );
+  console.log('Updated selected items:', selectedItems.value); // Log updated items
 }
 
 const getGroupSubtotal = (group) => {

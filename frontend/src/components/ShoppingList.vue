@@ -1,4 +1,3 @@
-// components/ShoppingList.vue
 <template>
   <div>
     <div class="flex justify-between items-center mb-4">
@@ -59,7 +58,7 @@
                   </div>
                 </div>
                 <button
-                  @click="$emit('removeItem', item)"
+                  @click="removeItem(item)"
                   class="w-full sm:w-auto py-2 px-4 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200"
                 >
                   Remove
@@ -122,7 +121,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { createListResource } from 'frappe-ui'
+import { createListResource, createResource } from 'frappe-ui'
 
 const props = defineProps({
   show: Boolean,
@@ -132,21 +131,20 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['removeItem', 'export'])
+const emit = defineEmits(['remove-item', 'export', 'update:items'])
 
-// List management
 const showNewListModal = ref(false)
 const newListName = ref('')
 const currentListName = ref('')
 
-// Frappe resources
 const shoppingLists = createListResource({
   doctype: 'Shopping List',
-  fields: ['name', 'list_name', 'items'],
+  fields: ['name', 'list_name'],
   orderBy: 'creation desc',
+  start: 0,
+  pageLength: 5,
 })
 
-// Computed properties
 const groupedItems = computed(() => {
   return props.items.reduce((groups, item) => {
     const source = item.source_site
@@ -164,7 +162,6 @@ const totalPrice = computed(() => {
   }, 0).toFixed(2)
 })
 
-// Methods
 const getGroupSubtotal = (group) => {
   return group.reduce((total, item) => {
     return total + (item.current_price * item.quantity)
@@ -193,49 +190,119 @@ const createList = async () => {
 
 const saveCurrentList = async () => {
   if (!currentListName.value) {
-    alert('Please select or create a list first')
-    return
+    alert('Please select or create a list first');
+    return;
   }
 
   try {
-    // Format items according to Shopping Item doctype structure
     const formattedItems = props.items.map(item => ({
-      product: item.name, // Link field to Product Item
-      price: item.current_price, // Auto-fetched from product
-      quantity: item.quantity
-    }))
+      product: item.productname,
+      price: item.current_price,
+      quantity: item.quantity,
+      doctype: 'Shopping Item'
+    }));
 
-    // Update the shopping list with new items
-    await shoppingLists.setValue.submit({
-      name: currentListName.value,
-      items: formattedItems
-    })
+    const shoppingListResource = createResource({
+      url: '/api/method/frappe.client.set_value',
+      params: {
+        doctype: 'Shopping List',
+        name: currentListName.value,
+        fieldname: 'shopping_items',
+        value: formattedItems
+      }
+    });
 
-    alert('Shopping list saved successfully!')
+    const response = await shoppingListResource.fetch();
+    
+    if (response && response.name) {
+      alert('Shopping list saved successfully!');
+    } else {
+      alert('Failed to save shopping list. Please check the console for details.');
+    }
   } catch (error) {
-    console.error('Error saving shopping list:', error)
-    alert('Error saving shopping list')
+    console.error('Error saving shopping list:', error);
+    alert('Failed to save shopping list: ' + error.message);
   }
 }
+
+const deleteItemFromList = async (itemToDelete) => {
+  try {
+    if (!itemToDelete.name) {
+      throw new Error('Item does not have a valid name property.');
+    }
+
+    const response = await createResource({
+      url: '/api/method/frappe.client.delete',
+      params: {
+        doctype: 'Shopping Item',
+        name: itemToDelete.name
+      }
+    }).fetch();
+
+    console.log('Delete response from API:', response);
+
+    if (!response) {
+      alert('Item deleted successfully!');
+      // Optionally, refresh the shopping list or update the local state
+      emit('update:items', props.items.filter(i => i.productname !== itemToDelete.name)); // Update the UI
+    } else {
+      alert('Failed to delete item. Please check the console for details.');
+    }
+  } catch (error) {
+    console.error('Error deleting item:', error);
+    alert('Failed to delete item: ' + error.message);
+  }
+};
+
+const removeItem = async (item) => {
+  console.log('Item to remove:', item);
+  const itemToDelete = {
+    name: item.productname
+  };
+
+  // Call the delete function first
+  await deleteItemFromList(itemToDelete);
+
+  // Emit the event to the parent component to remove the item
+  emit('remove-item', item); // Emit the item to be removed
+};
 
 const handleListChange = async () => {
   if (currentListName.value) {
     try {
-      const list = await shoppingLists.get(currentListName.value)
-      if (list && list.items) {
-        // Transform child table items back to the format expected by the component
-        const transformedItems = await Promise.all(list.items.map(async (item) => {
-          // Fetch full product details since we need additional fields
-          const product = await frappe.db.get_doc('Product Item', item.product)
+      const shoppingListResource = createResource({
+        url: '/api/method/frappe.client.get',
+        params: {
+          doctype: 'Shopping List',
+          name: currentListName.value
+        }
+      })
+      
+      await shoppingListResource.fetch()
+
+      if (shoppingListResource.data && shoppingListResource.data.shopping_items) {
+        const transformedItems = await Promise.all(shoppingListResource.data.shopping_items.map(async (item) => {
+          const productResource = createResource({
+            url: '/api/method/frappe.client.get',
+            params: {
+              doctype: 'Product Item',
+              name: item.product
+            }
+          })
+          
+          await productResource.fetch()
+
           return {
             name: item.product,
-            productname: product.productname,
+            productname: productResource.data.productname,
             current_price: item.price,
             quantity: item.quantity,
-            source_site: product.source_site
+            source_site: productResource.data.source_site
           }
         }))
         emit('update:items', transformedItems)
+      } else {
+        console.error('No shopping_items found in the fetched shopping list.')
       }
     } catch (error) {
       console.error('Error loading shopping list:', error)
@@ -243,8 +310,15 @@ const handleListChange = async () => {
   }
 }
 
-// Initial setup
 onMounted(async () => {
-  await shoppingLists.fetch()
+  try {
+    await shoppingLists.fetch()
+    if (shoppingLists.data.length > 0) {
+      currentListName.value = shoppingLists.data[0].name; // Select the first list
+      await handleListChange(); // Load the items for the selected list
+    }
+  } catch (error) {
+    console.error('Error fetching shopping lists:', error)
+  }
 })
 </script>
