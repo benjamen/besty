@@ -5,7 +5,7 @@
       to="/shopping-list" 
       class="inline-block bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg hover:bg-blue-600"
     >
-      Go to Shopping Lists
+      Manage Your Shopping Lists
     </router-link>
   </div>
   <div class="min-h-screen bg-gray-50 py-4 sm:py-8">
@@ -20,9 +20,10 @@
         </button>
       </div>
 
-      <ShoppingList
+       <ShoppingList
         :show="showShoppingList"
         :items="selectedItems"
+        @update:items="updateItems" 
         @remove-item="removeFromList"
         @export="exportToXLS"
       />
@@ -130,6 +131,11 @@ const addToList = (product) => {
       quantity: product.quantity
     })
   }
+}
+
+const updateItems = (newItems) => {
+  selectedItems.value = newItems;
+  console.log('Updated Selected Items:', selectedItems.value); // Log to verify
 }
 
 const removeFromList = (product) => {

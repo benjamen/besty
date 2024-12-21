@@ -270,18 +270,11 @@ const removeItem = async (item) => {
 };
 
 const handleListChange = async () => {
-  if (props.items.length > 0) {
-    const confirmChange = confirm('You have unsaved changes. Please save your list before switching.');
-    if (!confirmChange) {
-      return; // Prevent changing the list if the user cancels
-    }
-  }
-
-  // Clear the current items before loading the new list
-  emit('update:items', []); // Clear the items in the parent component
+  console.log('Current List Name:', currentListName.value); // Log the selected list name
 
   if (currentListName.value) {
     try {
+      // Fetch the selected shopping list from the backend
       const shoppingListResource = createResource({
         url: '/api/method/frappe.client.get',
         params: {
@@ -292,27 +285,36 @@ const handleListChange = async () => {
       
       await shoppingListResource.fetch();
 
+      // Log the fetched data
+      console.log('Fetched Shopping List Data:', shoppingListResource.data);
+
+      // Check if we have shopping items
       if (shoppingListResource.data && shoppingListResource.data.shopping_items) {
+        // Transform the fetched items
         const transformedItems = await Promise.all(shoppingListResource.data.shopping_items.map(async (item) => {
           const productResource = createResource({
             url: '/api/method/frappe.client.get',
             params: {
               doctype: 'Product Item',
-              name: item.product
+              name: item.name
             }
           });
           
           await productResource.fetch();
-
+            console.log('productResource', productResource);
           return {
             name: item.product,
             productname: productResource.data.productname,
             current_price: item.price,
             quantity: item.quantity,
-            source_site: productResource.data.source_site
+            source_site: productResource.data.source_site // This may be needed for grouping
           };
         }));
-        emit('update:items', transformedItems); // Update the items with the new list
+
+          console.log(' transformedItems:', transformedItems );
+
+        // Emit the transformed items to update the UI
+        emit('update:items', transformedItems);
       } else {
         console.error('No shopping_items found in the fetched shopping list.');
       }

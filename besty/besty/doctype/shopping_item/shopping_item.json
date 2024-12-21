@@ -9,7 +9,8 @@
  "field_order": [
   "product",
   "price",
-  "quantity"
+  "quantity",
+  "source_site"
  ],
  "fields": [
   {
@@ -40,12 +41,21 @@
    "in_preview": 1,
    "in_standard_filter": 1,
    "label": "Quantity"
+  },
+  {
+   "fetch_from": "product.source_site",
+   "fieldname": "source_site",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Shop"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-12-20 23:33:53.868292",
+ "modified": "2024-12-22 00:05:19.123813",
  "modified_by": "Administrator",
  "module": "Besty",
  "name": "Shopping Item",
