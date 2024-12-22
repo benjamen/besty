@@ -7,7 +7,7 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04  # Specify the Ubuntu version to avoid the warning
 
     steps:
       - name: Checkout Repository
@@ -18,10 +18,13 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Deploy via SSH
-        uses: ad-m/github-actions-setup-ssh@v2
+      - name: Setup SSH Key with Official GitHub Action
+        uses: appleboy/ssh-action@master
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script_stop: true
 
       - name: Run Deployment Commands
         run: |
