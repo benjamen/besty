@@ -13,14 +13,11 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v2
 
-      - name: SSH into Server
-        uses: webfactory/ssh-action@v2
+      - name: Set up SSH Agent
+        uses: actions/checkout@v2
         with:
-          host: 77.37.87.141
-          username: root
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            cd /home/frappe-user/frappe-bench/apps/besty/frontend
-            git pull upstream main
-            yarn build
-            sudo systemctl restart nginx
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Deploy via SSH
+        run: |
+          ssh root@77.37.87.141 "cd /home/frappe-user/frappe-bench/apps/besty/frontend && git pull upstream main && yarn build && sudo systemctl restart nginx"
