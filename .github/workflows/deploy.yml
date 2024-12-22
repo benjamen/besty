@@ -16,7 +16,7 @@ jobs:
       - name: SSH into Server
         uses: webfactory/ssh-action@v2
         with:
-          host: your-server-ip
+          host: 77.37.87.141
           username: root
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
