@@ -1,6 +1,4 @@
 .DS_Store
-
-.github/workflows/deploy.yml
 *.pyc
 *.egg-info
 *.swp
