@@ -358,3 +358,7 @@ onMounted(async () => {
   showListSelectionModal.value = true; // Show the modal on mount
 });
 </script>
+
+<style scoped>
+/* Add your styles here */
+</style>
