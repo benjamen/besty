@@ -235,9 +235,7 @@ const saveCurrentList = async () => {
 // Remove an item from the list
 const removeItem = async (item) => {
   console.log('Item to remove:', item);
-  
-  // Call the delete function first
-  await deleteItemFromList(item);
+
 
   // Emit the event to the parent component to remove the item
   emit('remove-item', item); // Emit the item to be removed
