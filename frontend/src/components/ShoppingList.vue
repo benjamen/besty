@@ -1,7 +1,7 @@
 <template>
   <div>
     <!-- New List Modal -->
-    <div v-if="showNewListModal" class="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center">
+    <div v-if="showNewListModal" class="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center z-50">
       <div class="bg-white rounded-lg shadow-lg p-6 space-y-4 w-full max-w-md">
         <h3 class="text-2xl font-semibold">New Shopping List</h3>
         <input 
@@ -27,7 +27,7 @@
     </div>
 
     <!-- List Selection Modal -->
-    <div v-if="showListSelectionModal" class="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center" @click.stop>
+    <div v-if="showListSelectionModal" class="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center z-40" @click.stop>
       <div class="bg-white rounded-lg shadow-lg p-6 space-y-4 w-full max-w-md">
         <h3 class="text-2xl font-semibold">Select a Shopping List</h3>
         <div class="flex justify-between items-center mb-4">
@@ -42,7 +42,7 @@
             </option>
           </select>
           <button
-            @click="createNewList"
+            @click="showNewListModal = true; console.log('New List Modal opened')"
             class="py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200"
           >
             New List
@@ -60,77 +60,68 @@
       </div>
     </div>
 
-    <Transition
-      enter-active-class="transition duration-200 ease-out"
-      enter-from-class="transform scale-95 opacity-0"
-      enter-to-class="transform scale-100 opacity-100"
-      leave-active-class="transition duration-200 ease-in"
-      leave-from-class="transform scale-100 opacity-100"
-      leave-to-class="transform scale-95 opacity-0"
-    >
-      <div v-show="show && items.length" class="bg-white p-4 rounded-lg shadow-md">
-        <h3 class="text-xl font-bold text-gray-900">{{ currentListName }}</h3>
-        
-        <div v-if="groupedItems" class="space-y-6 mt-4">
-          <div 
-            v-for="(group, source) in groupedItems" 
-            :key="source" 
-            class="border-b border-gray-200 pb-4 last:border-0"
-          >
-            <div class="flex justify-between items-center mb-3 bg-gray-100 p-3 rounded-lg">
-              <h4 class="text-lg font-semibold text-gray-800">{{ source }}</h4>
-              <span class="text-lg font-bold text-gray-700">
-                Subtotal: ${{ getGroupSubtotal(group).toFixed(2) }}
-              </span>
-            </div>
-            
-            <div class="space-y-2">
-              <div
-                v-for="item in group"
-                :key="item.productname"
-                class="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-gray-50 rounded-lg shadow-sm"
-              >
-                <div class="flex-1 mb-2 sm:mb-0">
-                  <strong class="text-lg block sm:inline">{{ item.productname }}</strong>
-                  <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
-                    <p class="text-sm text-gray-600">Price: ${{ item.current_price }}</p>
-                    <p class="text-sm text-gray-600">Quantity: {{ item.quantity }}</p>
-                    <p class="text-sm text-gray-600">Total: ${{ (item.current_price * item.quantity).toFixed(2) }}</p>
-                  </div>
+    <div v-show="show && items.length" class="bg-white p-4 rounded-lg shadow-md">
+      <h3 class="text-xl font-bold text-gray-900">{{ currentListName }}</h3>
+      
+      <div v-if="groupedItems" class="space-y-6 mt-4">
+        <div 
+          v-for="(group, source) in groupedItems" 
+          :key="source" 
+          class="border-b border-gray-200 pb-4 last:border-0"
+        >
+          <div class="flex justify-between items-center mb-3 bg-gray-100 p-3 rounded-lg">
+            <h4 class="text-lg font-semibold text-gray-800">{{ source }}</h4>
+            <span class="text-lg font-bold text-gray-700">
+              Subtotal: ${{ getGroupSubtotal(group).toFixed(2) }}
+            </span>
+          </div>
+          
+          <div class="space-y-2">
+            <div
+              v-for="item in group"
+              :key="item.productname"
+              class="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-gray-50 rounded-lg shadow-sm"
+            >
+              <div class="flex-1 mb-2 sm:mb-0">
+                <strong class="text-lg block sm:inline">{{ item.productname }}</strong>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
+                  <p class="text-sm text-gray-600">Price: ${{ item.current_price }}</p>
+                  <p class="text-sm text-gray-600">Quantity: {{ item.quantity }}</p>
+                  <p class="text-sm text-gray-600">Total: ${{ (item.current_price * item.quantity).toFixed(2) }}</p>
                 </div>
-                <button
-                  @click="removeItem(item)"
-                  class="w-full sm:w-auto py-2 px-4 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200"
-                >
-                  Remove
-                </button>
               </div>
+              <button
+                @click="removeItem(item)"
+                class="w-full sm:w-auto py-2 px-4 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200"
+              >
+                Remove
+              </button>
             </div>
           </div>
-        </div>
-
-        <div class="mt-6 pt-4 border-t border-gray-200">
-          <div class="text-xl font-bold text-right">
-            Grand Total: ${{ totalPrice }}
-          </div>
-        </div>
-
-        <div class="mt-4 flex justify-between">
-          <button 
-            @click="saveCurrentList"
-            class="py-2 px-4 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-200"
-          >
-            Save List
-          </button>
-          <button 
-            @click="$emit('export')"
-            class="py-2 px-4 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors duration-200"
-          >
-            Export to XLS
-          </button>
         </div>
       </div>
-    </Transition>
+
+      <div class="mt-6 pt-4 border-t border-gray-200">
+        <div class="text-xl font-bold text-right">
+          Grand Total: ${{ totalPrice }}
+        </div>
+      </div>
+
+      <div class="mt-4 flex justify-between">
+        <button 
+          @click="saveCurrentList"
+          class="py-2 px-4 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-200"
+        >
+          Save List
+        </button>
+        <button 
+          @click="$emit('export')"
+          class="py-2 px-4 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors duration-200"
+        >
+          Export to XLS
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -152,7 +143,8 @@ const emit = defineEmits(['remove-item', 'export', 'update:items']);
 const showNewListModal = ref(false);
 const showListSelectionModal = ref(false);
 const newListName = ref('');
-const currentListName = ref('');
+const currentListName = ref(''); // This will hold the name of the selected list
+let currentListId = ref(''); // This will hold the auto-generated ID of the selected list
 
 // Resource for shopping lists
 const shoppingLists = createListResource({
@@ -192,11 +184,63 @@ const getGroupSubtotal = (group) => {
 // Watch for changes in items prop
 watch(() => props.items, async (newItems) => {
   await saveCurrentList();
-}, { deep: true }); // Use deep watch to track changes in nested objects
+}, { deep: true });
+
+// Create a new shopping list
+const createList = async () => {
+  console.log('Creating new shopping list with name:', newListName.value);
+
+  if (!newListName.value) {
+    alert('Please enter a name for the new list.');
+    return;
+  }
+
+  try {
+    // Fetch existing shopping lists to check for duplicates
+    const existingLists = await shoppingLists.fetch({
+      params: {
+        doctype: 'Shopping List',
+        filters: { list_name: newListName.value }
+      }
+    });
+
+    // Ensure existingLists is defined and check for duplicates
+    if (existingLists && existingLists.length > 0) {
+      alert('A shopping list with this name already exists. Please choose a different name.');
+      return;
+    }
+
+    // Create a list in the database
+    const response = await shoppingLists.insert.submit({
+      list_name: newListName.value,
+      items: [] // Initialize empty items array
+    });
+
+    // Log the response to check if the list was created successfully
+    console.log('New Shopping List Response:', response);
+
+    // Set currentListName to the display name and currentListId to the auto-generated name
+    if (response && response.name) {
+      currentListName.value = newListName.value; // Display name
+      currentListId.value = response.name; // Auto-generated ID
+      console.log('New Shopping List ID:', currentListId.value);
+      showNewListModal.value = false;
+      await shoppingLists.fetch();
+      
+      // Automatically save the new list after creation
+      await saveCurrentList();
+    } else {
+      throw new Error('Failed to create shopping list, no name returned.');
+    }
+  } catch (error) {
+    console.error('Error creating shopping list:', error);
+    alert('Failed to create shopping list: ' + error.message);
+  }
+};
 
 // Save the current list to the database
 const saveCurrentList = async () => {
-  if (!currentListName.value) {
+  if (!currentListId.value) {
     alert('Please select or create a list first');
     return;
   }
@@ -213,10 +257,18 @@ const saveCurrentList = async () => {
       url: '/api/method/frappe.client.set_value',
       params: {
         doctype: 'Shopping List',
-        name: currentListName.value,
+        name: currentListId.value, // Use the auto-generated ID for saving
         fieldname: 'shopping_items',
         value: formattedItems
       }
+    });
+
+    // Log the request parameters for debugging
+    console.log('Saving Shopping List with parameters:', {
+      doctype: 'Shopping List',
+      name: currentListId.value,
+      fieldname: 'shopping_items',
+      value: formattedItems
     });
 
     const response = await shoppingListResource.fetch();
@@ -235,9 +287,6 @@ const saveCurrentList = async () => {
 // Remove an item from the list
 const removeItem = async (item) => {
   console.log('Item to remove:', item);
-
-
-  // Emit the event to the parent component to remove the item
   emit('remove-item', item); // Emit the item to be removed
 };
 
@@ -261,7 +310,7 @@ const handleListChange = async () => {
         url: '/api/method/frappe.client.get',
         params: {
           doctype: 'Shopping List',
-          name: currentListName.value
+          name: currentListName.value // Use the auto-generated ID here
         }
       });
       

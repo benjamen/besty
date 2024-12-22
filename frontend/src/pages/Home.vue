@@ -49,7 +49,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, defineEmits } from 'vue'
+import { ref, computed, watch, defineEmits,onMounted } from 'vue'
 import { createListResource } from 'frappe-ui'
 import * as XLSX from 'xlsx'
 import fuzzysort from 'fuzzysort'
@@ -113,13 +113,17 @@ const extractCategories = () => {
 }
 
 const addToList = (product) => {
+  console.log('Adding product:', product); // Log the product being added
+
   const existingItem = selectedItems.value.find(
-    (item) => item.productname === product.productname
+    (item) => item.productname === product.productname && item.source_site === product.source_site
   );
 
   if (existingItem) {
+    console.log('Item already exists, updating quantity:', existingItem); // Log existing item
     existingItem.quantity += product.quantity;
   } else {
+    console.log('Item does not exist, adding new item:', product); // Log new item
     selectedItems.value.push({
       ...product,
       quantity: product.quantity
@@ -239,6 +243,9 @@ watch(products, (newData) => {
   isLoading.value = false
 })
 
+onMounted(async () => {
+  await products.fetch()
+});
 // Initial data fetch
-products.fetch()
+
 </script>
