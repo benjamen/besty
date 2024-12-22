@@ -11,11 +11,6 @@ const routes = [
     path: '/account/login',
     component: () => import('@/pages/Login.vue'),
   },
-  {
-    path: '/shopping-list',
-    name: 'ShoppingList',
-    component: () => import('@/pages/ShoppingList.vue'),
-  },
 ];
 
 let router = createRouter({

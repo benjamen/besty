@@ -1,12 +1,6 @@
 <template>
   <div class="max-w-4xl mx-auto py-8">
-    <h1 class="text-3xl font-bold text-gray-800 mb-4">Welcome to Besty</h1>
-    <router-link 
-      to="/shopping-list" 
-      class="inline-block bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg hover:bg-blue-600"
-    >
-      Manage Your Shopping Lists
-    </router-link>
+    <h1 class="text-3xl font-bold text-gray-800 mb-4">Besty</h1>
   </div>
   <div class="min-h-screen bg-gray-50 py-4 sm:py-8">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 flex flex-col space-y-4 sm:space-y-6">
