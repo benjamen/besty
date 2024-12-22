@@ -20,4 +20,4 @@ jobs:
 
       - name: Run Deployment Commands
         run: |
-          ssh -o StrictHostKeyChecking=no root@77.37.87.141 "cd /home/frappe-user/frappe-bench/apps/besty/frontend && git pull origin main && yarn build && sudo systemctl restart nginx"
+          ssh -o StrictHostKeyChecking=no root@77.37.87.141 "cd /home/frappe-user/frappe-bench/apps/besty/frontend && git pull origin main --no-rebase && yarn build && sudo systemctl restart nginx"
