@@ -27,12 +27,12 @@
           min="1"
           value="1"
         />
-        <button
-          @click="$emit('addToList', product)"
-          class="flex-1 sm:flex-none py-2 px-4 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors duration-200"
-        >
-          Add to List
-        </button>
+      <button
+  @click="$emit('addToList', { ...product, quantity: product.quantity })"
+  class="flex-1 sm:flex-none py-2 px-4 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors duration-200"
+>
+  Add to List
+</button>
       </div>
     </div>
   </div>

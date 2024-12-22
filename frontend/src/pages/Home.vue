@@ -4,7 +4,6 @@
   </div>
   <div class="min-h-screen bg-gray-50 py-4 sm:py-8">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 flex flex-col space-y-4 sm:space-y-6">
-      <!-- Toggle Shopping List -->
       <div class="flex justify-end">
         <button
           @click="showShoppingList = !showShoppingList"
@@ -14,15 +13,15 @@
         </button>
       </div>
 
-       <ShoppingList
+      <ShoppingList
         :show="showShoppingList"
         :items="selectedItems"
         @update:items="updateItems" 
         @remove-item="removeFromList"
         @export="exportToXLS"
+        @saveCurrentList="saveCurrentList" 
       />
 
-      <!-- Search Section -->
       <div class="bg-white rounded-lg shadow-sm p-4 sm:p-6">
         <SearchBar
           v-model:searchQuery="searchQuery"
@@ -50,7 +49,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, defineEmits } from 'vue'
 import { createListResource } from 'frappe-ui'
 import * as XLSX from 'xlsx'
 import fuzzysort from 'fuzzysort'
@@ -69,6 +68,7 @@ const currentPage = ref(0)
 const isLoading = ref(true)
 const showShoppingList = ref(true)
 const pageSize = 10
+const emit = defineEmits();
 
 // Product resource
 const products = createListResource({
@@ -115,16 +115,25 @@ const extractCategories = () => {
 const addToList = (product) => {
   const existingItem = selectedItems.value.find(
     (item) => item.productname === product.productname
-  )
+  );
 
   if (existingItem) {
-    existingItem.quantity += product.quantity
+    existingItem.quantity += product.quantity;
   } else {
     selectedItems.value.push({
       ...product,
       quantity: product.quantity
-    })
+    });
   }
+
+  // Emit an event to save the current list
+  saveCurrentList();
+}
+
+const saveCurrentList = () => {
+  console.log("Saving current list:", selectedItems.value);
+  // Here you might want to call an API to save the list
+  localStorage.setItem('shoppingList', JSON.stringify(selectedItems.value));
 }
 
 const updateItems = (newItems) => {

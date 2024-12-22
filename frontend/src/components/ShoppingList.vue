@@ -1,22 +1,63 @@
 <template>
   <div>
-    <div class="flex justify-between items-center mb-4">
-      <select
-        v-model="currentListName"
-        class="p-2 border border-gray-300 rounded-lg"
-        @change="handleListChange"
-      >
-        <option value="">Select a List</option>
-        <option v-for="list in shoppingLists.data" :key="list.name" :value="list.name">
-          {{ list.list_name }}
-        </option>
-      </select>
-      <button
-        @click="createNewList"
-        class="py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200"
-      >
-        New List
-      </button>
+    <!-- New List Modal -->
+    <div v-if="showNewListModal" class="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center">
+      <div class="bg-white rounded-lg shadow-lg p-6 space-y-4 w-full max-w-md">
+        <h3 class="text-2xl font-semibold">New Shopping List</h3>
+        <input 
+          v-model="newListName" 
+          placeholder="List Name" 
+          class="w-full p-2 border border-gray-300 rounded"
+        />
+        <div class="flex justify-end space-x-2">
+          <button 
+            @click="createList" 
+            class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+          >
+            Create
+          </button>
+          <button 
+            @click="showNewListModal = false" 
+            class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- List Selection Modal -->
+    <div v-if="showListSelectionModal" class="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center" @click.stop>
+      <div class="bg-white rounded-lg shadow-lg p-6 space-y-4 w-full max-w-md">
+        <h3 class="text-2xl font-semibold">Select a Shopping List</h3>
+        <div class="flex justify-between items-center mb-4">
+          <select
+            v-model="currentListName"
+            class="p-2 border border-gray-300 rounded-lg"
+            @change="handleListChange"
+          >
+            <option value="">Select a List</option>
+            <option v-for="list in shoppingLists.data" :key="list.name" :value="list.name">
+              {{ list.list_name }}
+            </option>
+          </select>
+          <button
+            @click="createNewList"
+            class="py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200"
+          >
+            New List
+          </button>
+        </div>
+        <div class="flex justify-end">
+          <button 
+            @click="confirmSelection" 
+            class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+            :disabled="!currentListName"
+          >
+            Confirm
+          </button>
+        </div>
+      </div>
     </div>
 
     <Transition
@@ -28,7 +69,7 @@
       leave-to-class="transform scale-95 opacity-0"
     >
       <div v-show="show && items.length" class="bg-white p-4 rounded-lg shadow-md">
-        <h3 class="text-xl font-bold text-gray-900">Shopping List</h3>
+        <h3 class="text-xl font-bold text-gray-900">{{ currentListName }}</h3>
         
         <div v-if="groupedItems" class="space-y-6 mt-4">
           <div 
@@ -90,38 +131,12 @@
         </div>
       </div>
     </Transition>
-
-    <!-- New List Modal -->
-    <div v-if="showNewListModal" class="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center">
-      <div class="bg-white rounded-lg shadow-lg p-6 space-y-4 w-full max-w-md">
-        <h3 class="text-2xl font-semibold">New Shopping List</h3>
-        <input 
-          v-model="newListName" 
-          placeholder="List Name" 
-          class="w-full p-2 border border-gray-300 rounded"
-        />
-        <div class="flex justify-end space-x-2">
-          <button 
-            @click="createList" 
-            class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
-          >
-            Create
-          </button>
-          <button 
-            @click="showNewListModal = false" 
-            class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { createListResource, createResource } from 'frappe-ui'
+import { ref, computed, onMounted, watch } from 'vue';
+import { createListResource, createResource } from 'frappe-ui';
 
 const props = defineProps({
   show: Boolean,
@@ -129,65 +144,57 @@ const props = defineProps({
     type: Array,
     default: () => []
   }
-})
+});
 
-const emit = defineEmits(['remove-item', 'export', 'update:items'])
+const emit = defineEmits(['remove-item', 'export', 'update:items']);
 
-const showNewListModal = ref(false)
-const newListName = ref('')
-const currentListName = ref('')
+// Modal states and input values
+const showNewListModal = ref(false);
+const showListSelectionModal = ref(false);
+const newListName = ref('');
+const currentListName = ref('');
 
+// Resource for shopping lists
 const shoppingLists = createListResource({
   doctype: 'Shopping List',
   fields: ['name', 'list_name'],
   orderBy: 'creation desc',
   start: 0,
   pageLength: 5,
-})
+});
 
+// Group items by source
 const groupedItems = computed(() => {
   return props.items.reduce((groups, item) => {
-    const source = item.source_site
+    const source = item.source_site;
     if (!groups[source]) {
-      groups[source] = []
+      groups[source] = [];
     }
-    groups[source].push(item)
-    return groups
-  }, {})
-})
+    groups[source].push(item);
+    return groups;
+  }, {});
+});
 
+// Calculate total price
 const totalPrice = computed(() => {
   return props.items.reduce((total, item) => {
-    return total + item.current_price * item.quantity
-  }, 0).toFixed(2)
-})
+    return total + item.current_price * item.quantity;
+  }, 0).toFixed(2);
+});
 
+// Get subtotal for a group
 const getGroupSubtotal = (group) => {
   return group.reduce((total, item) => {
-    return total + (item.current_price * item.quantity)
-  }, 0)
-}
+    return total + (item.current_price * item.quantity);
+  }, 0);
+};
 
-const createNewList = () => {
-  showNewListModal.value = true
-  newListName.value = ''
-}
+// Watch for changes in items prop
+watch(() => props.items, async (newItems) => {
+  await saveCurrentList();
+}, { deep: true }); // Use deep watch to track changes in nested objects
 
-const createList = async () => {
-  try {
-    const response = await shoppingLists.insert.submit({
-      list_name: newListName.value,
-      items: [] // Initialize empty items array
-    })
-    
-    currentListName.value = response.name
-    showNewListModal.value = false
-    await shoppingLists.fetch()
-  } catch (error) {
-    console.error('Error creating shopping list:', error)
-  }
-}
-
+// Save the current list to the database
 const saveCurrentList = async () => {
   if (!currentListName.value) {
     alert('Please select or create a list first');
@@ -223,52 +230,29 @@ const saveCurrentList = async () => {
     console.error('Error saving shopping list:', error);
     alert('Failed to save shopping list: ' + error.message);
   }
-}
-
-const deleteItemFromList = async (itemToDelete) => {
-  try {
-    if (!itemToDelete.name) {
-      throw new Error('Item does not have a valid name property.');
-    }
-
-    const response = await createResource({
-      url: '/api/method/frappe.client.delete',
-      params: {
-        doctype: 'Shopping Item',
-        name: itemToDelete.name
-      }
-    }).fetch();
-
-    console.log('Delete response from API:', response);
-
-    if (!response) {
-      alert('Item deleted successfully!');
-      emit('update:items', props.items.filter(i => i.productname !== itemToDelete.name)); // Update the UI
-    } else {
-      alert('Failed to delete item. Please check the console for details.');
-    }
-  } catch (error) {
-    console.error('Error deleting item:', error);
-    alert('Failed to delete item: ' + error.message);
-  }
 };
 
+// Remove an item from the list
 const removeItem = async (item) => {
   console.log('Item to remove:', item);
-  const itemToDelete = {
-    name: item.productname
-  };
-
+  
   // Call the delete function first
-  await deleteItemFromList(itemToDelete);
+  await deleteItemFromList(item);
 
   // Emit the event to the parent component to remove the item
   emit('remove-item', item); // Emit the item to be removed
-
-  // Automatically save the current list after removing the item
-  await saveCurrentList();
 };
 
+// Confirm the selection of a shopping list
+const confirmSelection = () => {
+  if (currentListName.value) {
+    showListSelectionModal.value = false; // Close the modal only if a list is selected
+  } else {
+    alert('Please select a list or create a new one.'); // Alert if no selection
+  }
+};
+
+// Handle the change of the selected list
 const handleListChange = async () => {
   console.log('Current List Name:', currentListName.value); // Log the selected list name
 
@@ -301,7 +285,6 @@ const handleListChange = async () => {
           });
           
           await productResource.fetch();
-            console.log('productResource', productResource);
           return {
             name: item.product,
             productname: productResource.data.productname,
@@ -310,8 +293,6 @@ const handleListChange = async () => {
             source_site: productResource.data.source_site // This may be needed for grouping
           };
         }));
-
-          console.log(' transformedItems:', transformedItems );
 
         // Emit the transformed items to update the UI
         emit('update:items', transformedItems);
@@ -324,7 +305,9 @@ const handleListChange = async () => {
   }
 }
 
+// Fetch the shopping lists on component mount
 onMounted(async () => {
-  await shoppingLists.fetch()
-})
+  await shoppingLists.fetch();
+  showListSelectionModal.value = true; // Show the modal on mount
+});
 </script>
