@@ -13,18 +13,16 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v2
 
-      - name: Setup SSH Agent
+      - name: Setup SSH Key
         uses: webfactory/ssh-agent@v0.5.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
       - name: Deploy via SSH
-        uses: webfactory/ssh-action@v2
+        uses: ad-m/github-actions-setup-ssh@v2
         with:
-          host: 77.37.87.141
-          username: root
-          script: |
-            cd /home/frappe-user/frappe-bench/apps/besty/frontend
-            git pull upstream main
-            yarn build
-            sudo systemctl restart nginx
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run Deployment Commands
+        run: |
+          ssh root@77.37.87.141 "cd /home/frappe-user/frappe-bench/apps/besty/frontend && git pull origin main && yarn build && sudo systemctl restart nginx"
