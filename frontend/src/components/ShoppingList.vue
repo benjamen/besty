@@ -32,7 +32,7 @@
         <h3 class="text-2xl font-semibold">Select a Shopping List</h3>
         <div class="flex justify-between items-center mb-4">
           <select
-            v-model="currentListName"
+            v-model="currentListId"
             class="p-2 border border-gray-300 rounded-lg"
             @change="handleListChange"
           >
@@ -42,7 +42,7 @@
             </option>
           </select>
           <button
-            @click="showNewListModal = true; console.log('New List Modal opened')"
+            @click="showNewListModal = true"
             class="py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200"
           >
             New List
@@ -52,7 +52,7 @@
           <button 
             @click="confirmSelection" 
             class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
-            :disabled="!currentListName"
+            :disabled="!currentListId"
           >
             Confirm
           </button>
@@ -61,7 +61,7 @@
     </div>
 
     <div v-show="show && items.length" class="bg-white p-4 rounded-lg shadow-md">
-      <h3 class="text-xl font-bold text-gray-900">{{ currentListName }}</h3>
+      <h3 class="text-xl font-bold text-gray-900">{{ displayListName || 'Untitled List' }}</h3>
       
       <div v-if="groupedItems" class="space-y-6 mt-4">
         <div 
@@ -143,8 +143,8 @@ const emit = defineEmits(['remove-item', 'export', 'update:items']);
 const showNewListModal = ref(false);
 const showListSelectionModal = ref(false);
 const newListName = ref('');
-const currentListName = ref(''); // This will hold the name of the selected list
-let currentListId = ref(''); // This will hold the auto-generated ID of the selected list
+const currentListId = ref(''); // Store the list ID
+const displayListName = ref(''); // Store the display name
 
 // Resource for shopping lists
 const shoppingLists = createListResource({
@@ -188,8 +188,6 @@ watch(() => props.items, async (newItems) => {
 
 // Create a new shopping list
 const createList = async () => {
-  console.log('Creating new shopping list with name:', newListName.value);
-
   if (!newListName.value) {
     alert('Please enter a name for the new list.');
     return;
@@ -204,30 +202,21 @@ const createList = async () => {
       }
     });
 
-    // Ensure existingLists is defined and check for duplicates
     if (existingLists && existingLists.length > 0) {
       alert('A shopping list with this name already exists. Please choose a different name.');
       return;
     }
 
-    // Create a list in the database
     const response = await shoppingLists.insert.submit({
       list_name: newListName.value,
-      items: [] // Initialize empty items array
+      items: []
     });
 
-    // Log the response to check if the list was created successfully
-    console.log('New Shopping List Response:', response);
-
-    // Set currentListName to the display name and currentListId to the auto-generated name
     if (response && response.name) {
-      currentListName.value = newListName.value; // Display name
-      currentListId.value = response.name; // Auto-generated ID
-      console.log('New Shopping List ID:', currentListId.value);
+      currentListId.value = response.name; // Store the ID
+      displayListName.value = newListName.value; // Store the display name
       showNewListModal.value = false;
       await shoppingLists.fetch();
-      
-      // Automatically save the new list after creation
       await saveCurrentList();
     } else {
       throw new Error('Failed to create shopping list, no name returned.');
@@ -257,18 +246,10 @@ const saveCurrentList = async () => {
       url: '/api/method/frappe.client.set_value',
       params: {
         doctype: 'Shopping List',
-        name: currentListId.value, // Use the auto-generated ID for saving
+        name: currentListId.value,
         fieldname: 'shopping_items',
         value: formattedItems
       }
-    });
-
-    // Log the request parameters for debugging
-    console.log('Saving Shopping List with parameters:', {
-      doctype: 'Shopping List',
-      name: currentListId.value,
-      fieldname: 'shopping_items',
-      value: formattedItems
     });
 
     const response = await shoppingListResource.fetch();
@@ -286,42 +267,38 @@ const saveCurrentList = async () => {
 
 // Remove an item from the list
 const removeItem = async (item) => {
-  console.log('Item to remove:', item);
-  emit('remove-item', item); // Emit the item to be removed
+  emit('remove-item', item);
 };
 
 // Confirm the selection of a shopping list
 const confirmSelection = () => {
-  if (currentListName.value) {
-    showListSelectionModal.value = false; // Close the modal only if a list is selected
+  if (currentListId.value) {
+    showListSelectionModal.value = false;
   } else {
-    alert('Please select a list or create a new one.'); // Alert if no selection
+    alert('Please select a list or create a new one.');
   }
 };
 
 // Handle the change of the selected list
 const handleListChange = async () => {
-  console.log('Current List Name:', currentListName.value); // Log the selected list name
-
-  if (currentListName.value) {
+  if (currentListId.value) {
     try {
-      // Fetch the selected shopping list from the backend
       const shoppingListResource = createResource({
         url: '/api/method/frappe.client.get',
         params: {
           doctype: 'Shopping List',
-          name: currentListName.value // Use the auto-generated ID here
+          name: currentListId.value
         }
       });
       
       await shoppingListResource.fetch();
+      
+      // Set the display name from the fetched data
+      if (shoppingListResource.data && shoppingListResource.data.list_name) {
+        displayListName.value = shoppingListResource.data.list_name;
+      }
 
-      // Log the fetched data
-      console.log('Fetched Shopping List Data:', shoppingListResource.data);
-
-      // Check if we have shopping items
       if (shoppingListResource.data && shoppingListResource.data.shopping_items) {
-        // Transform the fetched items
         const transformedItems = await Promise.all(shoppingListResource.data.shopping_items.map(async (item) => {
           const productResource = createResource({
             url: '/api/method/frappe.client.get',
@@ -337,28 +314,21 @@ const handleListChange = async () => {
             productname: productResource.data.productname,
             current_price: item.price,
             quantity: item.quantity,
-            source_site: productResource.data.source_site // This may be needed for grouping
+            source_site: productResource.data.source_site
           };
         }));
 
-        // Emit the transformed items to update the UI
         emit('update:items', transformedItems);
-      } else {
-        console.error('No shopping_items found in the fetched shopping list.');
       }
     } catch (error) {
       console.error('Error loading shopping list:', error);
     }
   }
-}
+};
 
 // Fetch the shopping lists on component mount
 onMounted(async () => {
   await shoppingLists.fetch();
-  showListSelectionModal.value = true; // Show the modal on mount
+  showListSelectionModal.value = true;
 });
 </script>
-
-<style scoped>
-/* Add your styles here */
-</style>
