@@ -55,7 +55,7 @@ watch(localSelectedCategory, (newVal) => {
 // Emit search event with search query and selected category
 const handleSearch = () => {
   emit('search', { 
-    searchQuery: localSearchQuery.value, 
+    searchQuery: normalizeSearchQuery(localSearchQuery.value), 
     selectedCategory: localSelectedCategory.value 
   });
 }
@@ -87,5 +87,15 @@ const formatCategoryName = (category) => {
   return category
     .replace(/-/g, ' ') // Replace dashes with spaces
     .replace(/\b\w/g, char => char.toUpperCase()); // Capitalize first letter of each word
+};
+
+// Function to normalize the search query
+const normalizeSearchQuery = (query) => {
+  return query
+    .toLowerCase() // Convert to lowercase for case-insensitive matching
+    .trim() // Remove leading and trailing whitespace
+    .split(/\s+/) // Split by whitespace to handle multiple words
+    .map(word => word.replace(/['’]/g, '')) // Remove apostrophes
+    .filter(word => word.length > 0); // Filter out empty words
 };
 </script>
