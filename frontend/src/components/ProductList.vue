@@ -141,7 +141,7 @@ const sortedGroupedProducts = computed(() => {
 
     // Check for existing subgroups based on similarity and size
     const similarGroup = groups[product.category].subGroups.find(subGroup => {
-      return subGroup.products.some(p => stringSimilarity(p.productname, product.productname) && p.size === product.size);
+      return subGroup.products.some(p => fuzzyMatch(p.productname, product.productname) && p.size === product.size);
     });
 
     if (similarGroup) {
@@ -168,12 +168,13 @@ const sortedGroupedProducts = computed(() => {
   return Object.values(groups);
 });
 
-// Function to calculate string similarity (basic implementation)
-const stringSimilarity = (str1, str2) => {
-  const longer = str1.length > str2.length ? str1 : str2;
-  const shorter = str1.length > str2.length ? str2 : str1;
-  const matchCount = [...shorter].filter(char => longer.includes(char)).length;
-  return matchCount / longer.length >= 0.9; // 90% match
+// Function to perform fuzzy matching on product names
+const fuzzyMatch = (str1, str2) => {
+  const words1 = str1.toLowerCase().split(' ').sort();
+  const words2 = str2.toLowerCase().split(' ').sort();
+  
+  // Check if all words in words1 are in words2
+  return words1.every(word => words2.includes(word));
 };
 
 // Display not categorized products
