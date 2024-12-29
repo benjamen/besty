@@ -250,6 +250,7 @@ const findGroupLabel = (products) => {
 const sortedGroupedProducts = computed(() => {
   const groups = {};
 
+  // Group creation remains the same
   props.paginatedProducts.forEach(product => {
     if (!product?.productname || !product.category) return;
 
@@ -275,16 +276,32 @@ const sortedGroupedProducts = computed(() => {
     }
   });
 
-  // Sort groups and products
-  return Object.values(groups).map(group => ({
-    ...group,
-    subGroups: group.subGroups
+  // Transform groups and add lowest price for sorting
+  const groupsArray = Object.values(groups).map(group => {
+    // Sort products within each subgroup by price
+    const sortedSubGroups = group.subGroups
       .sort((a, b) => a.label.localeCompare(b.label))
       .map(subGroup => ({
         ...subGroup,
         products: subGroup.products.sort((a, b) => a.current_price - b.current_price)
-      }))
-  })).sort((a, b) => a.category.localeCompare(b.category));
+      }));
+
+    // Find the lowest price across all products in this group
+    const lowestPrice = Math.min(
+      ...sortedSubGroups.flatMap(sg => 
+        sg.products.map(p => p.current_price)
+      )
+    );
+
+    return {
+      ...group,
+      lowestPrice,
+      subGroups: sortedSubGroups
+    };
+  });
+
+  // Sort groups by lowest price
+  return groupsArray.sort((a, b) => a.lowestPrice - b.lowestPrice);
 });
 
 const notCategorizedProducts = computed(() => {
