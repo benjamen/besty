@@ -50,16 +50,16 @@
                 <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
                   <div class="flex items-center gap-2">
                     <p class="text-sm text-gray-600">Price: ${{ product.current_price }}</p>
-                    <span
-                      v-if="subGroup.products.length > 1 && productIndex > 0"
-                      :class="{
-                        'px-2 py-1 text-xs font-medium rounded-full': true,
-                        'bg-red-100 text-red-800': getPriceDifference(product, subGroup.products[0]) > 0,
-                        'bg-green-100 text-green-800': getPriceDifference(product, subGroup.products[0]) < 0
-                      }"
-                    >
-                      {{ formatPriceDifference(getPriceDifference(product, subGroup.products[0])) }}
-                    </span>
+              <span
+  v-if="subGroup.products.length > 1 && productIndex > 0 && getPriceDifference(product, subGroup.products[0]) !== 0"
+  :class="{
+    'px-2 py-1 text-xs font-medium rounded-full': true,
+    'bg-red-100 text-red-800': getPriceDifference(product, subGroup.products[0]) > 0,
+    'bg-green-100 text-green-800': getPriceDifference(product, subGroup.products[0]) < 0
+  }"
+>
+  {{ formatPriceDifference(getPriceDifference(product, subGroup.products[0])) }}
+</span>
                   </div>
                   <p class="text-sm text-gray-500">Source: {{ product.source_site }}</p>
                   <p class="text-sm text-gray-500">Category: {{ formatCategoryName(product.category) }}</p>
@@ -235,8 +235,12 @@ const areProductsSimilar = (product1, product2) => {
   // Calculate name similarity
   const similarityScore = calculateSimilarity(product1.productname, product2.productname);
   const SIMILARITY_THRESHOLD = 0.7;
+
+  // Additional check for specific product names
+  const specialCaseMatch = (product1.productname.includes("Beehive") && product2.productname.includes("Beehive")) &&
+                           (product1.productname.includes("Bacon") && product2.productname.includes("Bacon"));
   
-  return similarityScore >= SIMILARITY_THRESHOLD;
+  return similarityScore >= SIMILARITY_THRESHOLD || specialCaseMatch;
 };
 
 const findGroupLabel = (products) => {
@@ -250,7 +254,6 @@ const findGroupLabel = (products) => {
 const sortedGroupedProducts = computed(() => {
   const groups = {};
 
-  // Group creation remains the same
   props.paginatedProducts.forEach(product => {
     if (!product?.productname || !product.category) return;
 
@@ -276,32 +279,16 @@ const sortedGroupedProducts = computed(() => {
     }
   });
 
-  // Transform groups and add lowest price for sorting
-  const groupsArray = Object.values(groups).map(group => {
-    // Sort products within each subgroup by price
-    const sortedSubGroups = group.subGroups
+  // Sort groups and products
+  return Object.values(groups).map(group => ({
+    ...group,
+    subGroups: group.subGroups
       .sort((a, b) => a.label.localeCompare(b.label))
       .map(subGroup => ({
         ...subGroup,
         products: subGroup.products.sort((a, b) => a.current_price - b.current_price)
-      }));
-
-    // Find the lowest price across all products in this group
-    const lowestPrice = Math.min(
-      ...sortedSubGroups.flatMap(sg => 
-        sg.products.map(p => p.current_price)
-      )
-    );
-
-    return {
-      ...group,
-      lowestPrice,
-      subGroups: sortedSubGroups
-    };
-  });
-
-  // Sort groups by lowest price
-  return groupsArray.sort((a, b) => a.lowestPrice - b.lowestPrice);
+      }))
+  })).sort((a, b) => a.category.localeCompare(b.category));
 });
 
 const notCategorizedProducts = computed(() => {
