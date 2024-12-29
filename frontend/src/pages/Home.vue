@@ -36,18 +36,14 @@
             :categories="categories"
             @search="performSearch"
             class="flex-1"
+            v-model:sortOption="sortOption"
           />
-          <button
-            @click="clearSearch"
-            class="mt-4 sm:mt-0 sm:ml-4 px-4 py-2 text-white bg-red-500 rounded-lg hover:bg-red-600 transition"
-          >
-            Clear Search
-          </button>
         </div>
 
         <!-- Product List -->
         <ProductList
           :paginatedProducts="paginatedProducts"
+          :sortOption="sortOption" 
           @addToList="addToList"
         />
 
@@ -85,6 +81,7 @@ const currentPage = ref(0);
 const isLoading = ref(true);
 const showShoppingList = ref(true);
 const pageSize = 10;
+const sortOption = ref('category'); // Add this line for sorting
 
 // Product resource
 const products = createListResource({
@@ -98,19 +95,32 @@ const products = createListResource({
 // Computed properties
 const filteredProducts = computed(() => {
   const query = searchQuery.value.trim().toLowerCase();
-  if (!query) return allProducts.value;
+  let results = allProducts.value;
 
-  const results = fuzzysort.go(query, allProducts.value, {
-    keys: ['productname', 'source_site'],
-    threshold: -1000,
-    all: true,
-  });
+  // Filter by category (using original category names)
+  if (selectedCategory.value) {
+    results = results.filter(product => product.category === selectedCategory.value);
+  }
 
-  const matchedProducts = results.map((result) => result.obj);
+  // Filter by search query
+  if (query) {
+    results = fuzzysort.go(query, results, {
+      keys: ['productname', 'source_site'],
+      threshold: -1000,
+      all: true,
+    }).map(result => result.obj);
+  }
 
-  return matchedProducts.filter((product) =>
-    selectedCategory.value ? product.category === selectedCategory.value : true
-  );
+  // Sort products based on the selected sort option
+  if (sortOption.value === 'name') {
+    results.sort((a, b) => a.productname.localeCompare(b.productname));
+  } else if (sortOption.value === 'price') {
+    results.sort((a, b) => a.current_price - b.current_price);
+  } else if (sortOption.value === 'category') {
+    results.sort((a, b) => a.category.localeCompare(b.category));
+  }
+
+  return results;
 });
 
 const totalPages = computed(() => Math.ceil(filteredProducts.value.length / pageSize));
@@ -202,11 +212,12 @@ const prevPage = () => {
 };
 
 const performSearch = () => {
-  currentPage.value = 0;
+  currentPage.value = 0; // Reset to the first page when searching
 };
 
 const clearSearch = () => {
   searchQuery.value = '';
+  selectedCategory.value = '';
   currentPage.value = 0;
 };
 

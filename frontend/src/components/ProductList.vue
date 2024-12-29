@@ -1,20 +1,13 @@
 <template>
   <div class="space-y-4">
-    <div class="mb-4 flex justify-end">
-      <select v-model="sortOption" class="p-2 border border-gray-300 rounded-lg">
-        <option value="name">Sort by Name</option>
-        <option value="price">Sort by Price</option>
-      </select>
-    </div>
-
-    <!-- Display grouped products -->
+    <!-- Display grouped products by category -->
     <div v-if="sortedGroupedProducts.length" class="space-y-4">
       <div
         v-for="(group, index) in sortedGroupedProducts"
         :key="index"
         class="p-4 bg-gray-100 rounded-lg shadow-sm"
       >
-        <h3 class="font-bold text-lg mb-2">{{ group[0].productname }}</h3>
+        <h3 class="font-bold text-lg mb-2">{{ formatCategoryName(group[0].category) }}</h3>
         <div class="space-y-4">
           <div
             v-for="product in group"
@@ -26,7 +19,7 @@
               <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
                 <p class="text-sm text-gray-600">Price: ${{ product.current_price }}</p>
                 <p class="text-sm text-gray-500">Source: {{ product.source_site }}</p>
-                <p class="text-sm text-gray-500">Category: {{ product.category }}</p>
+                <p class="text-sm text-gray-500">Category: {{ formatCategoryName(product.category) }}</p>
                 <p v-if="product.size" class="text-sm text-gray-500">Size: {{ product.size }}</p>
                 <p v-if="product.unit_price" class="text-sm text-gray-500">Unit Price: ${{ product.unit_price }}</p>
                 <p v-if="product.unit_name" class="text-sm text-gray-500">Unit: {{ product.unit_name }}</p>
@@ -52,15 +45,15 @@
       </div>
     </div>
 
-    <!-- Display single products without grouping style -->
-    <div v-if="singleProducts.length" class="space-y-4">
-      <h3 class="font-bold text-lg mb-2">Not Matched</h3>
-      <div v-for="product in singleProducts" :key="product.productname + product.source_site" class="p-4 bg-gray-50 rounded-lg shadow-sm">
+    <!-- Display not categorized products -->
+    <div v-if="notCategorizedProducts.length" class="space-y-4">
+      <h3 class="font-bold text-lg mb-2">Not Categorized Products</h3>
+      <div v-for="product in notCategorizedProducts" :key="product.productname + product.source_site" class="p-4 bg-gray-50 rounded-lg shadow-sm">
         <strong class="text-lg block">{{ product.productname }}</strong>
         <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
           <p class="text-sm text-gray-600">Price: ${{ product.current_price }}</p>
           <p class="text-sm text-gray-500">Source: {{ product.source_site }}</p>
-          <p class="text-sm text-gray-500">Category: {{ product.category }}</p>
+          <p class="text-sm text-gray-500">Category: {{ formatCategoryName(product.category) }}</p>
           <p v-if="product.size" class="text-sm text-gray-500">Size: {{ product.size }}</p>
           <p v-if="product.unit_price" class="text-sm text-gray-500">Unit Price: ${{ product.unit_price }}</p>
           <p v-if="product.unit_name" class="text-sm text-gray-500">Unit: {{ product.unit_name }}</p>
@@ -68,12 +61,10 @@
       </div>
     </div>
   </div>
-
-
 </template>
 
 <script setup>
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 
 // Props with validation
 const props = defineProps({
@@ -81,11 +72,12 @@ const props = defineProps({
     type: Array,
     default: () => [],
     required: true
+  },
+  sortOption: {
+    type: String,
+    default: 'category'
   }
 });
-
-// Sorting state
-const sortOption = ref('name');
 
 // Emits with validation
 const emit = defineEmits({
@@ -100,88 +92,74 @@ const handleAddToList = (product) => {
   emit('addToList', { ...product, quantity });
 };
 
-// Normalize product name for comparison
-function normalizeProductName(name) {
-  return name.toLowerCase()
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-// Updated fuzzy matching logic
-function isVeryClose(nameA, nameB) {
-  const normalizedA = normalizeProductName(nameA);
-  const normalizedB = normalizeProductName(nameB);
-  
-  // Exact match after normalization
-  if (normalizedA === normalizedB) return true;
-
-  // Check for minimal differences (just spacing or capitalization)
-  const simpleA = normalizedA.replace(/[^a-z0-9]/g, '');
-  const simpleB = normalizedB.replace(/[^a-z0-9]/g, '');
-  
-  // Allow for minor variations in word order or common synonyms
-  const wordsA = normalizedA.split(' ');
-  const wordsB = normalizedB.split(' ');
-
-  // Check if all words in one are present in the other
-  const allWordsMatch = wordsA.every(word => wordsB.includes(word)) || wordsB.every(word => wordsA.includes(word));
-  
-  return simpleA === simpleB || allWordsMatch;
-}
-
-// Group products with updated matching logic
+// Group products by category and similar names with the same size
 const groupedProducts = computed(() => {
   if (!props.paginatedProducts?.length) return [];
   
-  const groups = [];
+  const groups = {};
 
   props.paginatedProducts.forEach((product) => {
-    if (!product?.productname || !product.size) return; // Ensure size exists
-    
-    let matchedGroup = null;
+    if (!product?.productname || !product.category) return; // Ensure category exists
 
-    // Find a matching group
-    for (const group of groups) {
-      if (group.length && isVeryClose(group[0].productname, product.productname) && group[0].size === product.size) {
-        matchedGroup = group;
-        break;
-      }
+    // Initialize category group if it doesn't exist
+    if (!groups[product.category]) {
+      groups[product.category] = [];
     }
 
-    // Add to existing group or create a new one
-    if (matchedGroup) {
-      matchedGroup.push({ ...product, quantity: product.quantity || 1 });
+    // Check for similarity with existing products in the group
+    const existingGroup = groups[product.category];
+    const similarGroup = existingGroup.find(p => stringSimilarity(p.productname, product.productname) && p.size === product.size);
+
+    if (similarGroup) {
+      similarGroup.quantity += product.quantity || 1; // Increment quantity if similar
     } else {
-      groups.push([{ ...product, quantity: product.quantity || 1 }]);
+      // Add product to the appropriate category group
+      groups[product.category].push({ ...product, quantity: product.quantity || 1 });
     }
   });
 
-  return groups.filter(group => group.length > 1); // Only return groups with more than one product
+  // Convert the object to an array of groups
+  return Object.values(groups);
 });
 
-// Sort the grouped products
+// Function to calculate string similarity (basic implementation)
+const stringSimilarity = (str1, str2) => {
+  const longer = str1.length > str2.length ? str1 : str2;
+  const shorter = str1.length > str2.length ? str2 : str1;
+  const matchCount = [...shorter].filter(char => longer.includes(char)).length;
+  return matchCount / longer.length >= 0.9; // 90% match
+};
+
+// Sort the grouped products based on size and then price
 const sortedGroupedProducts = computed(() => {
   const sorted = [...groupedProducts.value];
-  
-  if (sortOption.value === 'name') {
-    sorted.sort((a, b) => 
-      normalizeProductName(a[0].productname).localeCompare(normalizeProductName(b[0].productname))
-    );
-  } else if (sortOption.value === 'price') {
-    sorted.sort((a, b) => {
-      const minPriceA = Math.min(...a.map(p => p.current_price));
-      const minPriceB = Math.min(...b.map(p => p.current_price));
-      return minPriceA - minPriceB;
+
+  sorted.forEach(group => {
+    group.sort((a, b) => {
+      // Sort by size first
+      const sizeComparison = (a.size || '').localeCompare(b.size || '');
+      if (sizeComparison !== 0) return sizeComparison;
+
+      // Then sort by price
+      return a.current_price - b.current_price;
     });
-  }
+  });
   
   return sorted;
 });
 
-// Display single products without grouping style
-const singleProducts = computed(() => {
+// Display not categorized products
+const notCategorizedProducts = computed(() => {
   return props.paginatedProducts.filter(product => {
-    return !groupedProducts.value.some(group => group.includes(product));
+    return !groupedProducts.value.some(group => group.includes(product)) && !product.category;
   });
 });
+
+// Helper function to format category names
+const formatCategoryName = (category) => {
+  if (!category) return '';
+  return category
+    .replace(/-/g, ' ') // Replace dashes with spaces
+    .replace(/\b\w/g, char => char.toUpperCase()); // Capitalize first letter of each word
+};
 </script>
