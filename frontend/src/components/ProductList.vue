@@ -7,13 +7,47 @@
         :key="index"
         class="p-4 bg-gray-100 rounded-lg shadow-sm"
       >
-        <h3 class="font-bold text-lg mb-2">{{ formatCategoryName(group[0].category) }}</h3>
+        <h3 class="font-bold text-lg mb-2">{{ formatCategoryName(group.category) }}</h3>
         <div class="space-y-4">
-          <div
-            v-for="product in group"
-            :key="product.productname + product.source_site"
-            class="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-gray-50 rounded-lg shadow-sm"
-          >
+          <!-- Display subgroups for matched products -->
+          <div v-for="(subGroup, subIndex) in group.subGroups" :key="subIndex" class="space-y-2">
+            <h4 class="font-semibold text-md mb-1">{{ subGroup.label }}</h4>
+            <div
+              v-for="product in subGroup.products"
+              :key="product.productname + product.source_site"
+              class="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-gray-50 rounded-lg shadow-sm"
+            >
+              <div class="flex-1 mb-3 sm:mb-0">
+                <strong class="text-lg block sm:inline">{{ product.productname }}</strong>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
+                  <p class="text-sm text-gray-600">Price: ${{ product.current_price }}</p>
+                  <p class="text-sm text-gray-500">Source: {{ product.source_site }}</p>
+                  <p class="text-sm text-gray-500">Category: {{ formatCategoryName(product.category) }}</p>
+                  <p v-if="product.size" class="text-sm text-gray-500">Size: {{ product.size }}</p>
+                  <p v-if="product.unit_price" class="text-sm text-gray-500">Unit Price: ${{ product.unit_price }}</p>
+                  <p v-if="product.unit_name" class="text-sm text-gray-500">Unit: {{ product.unit_name }}</p>
+                </div>
+              </div>
+              <div class="flex w-full sm:w-auto gap-2">
+                <input
+                  v-model.number="product.quantity"
+                  type="number"
+                  placeholder="Qty"
+                  class="w-20 p-2 border border-gray-300 rounded-lg"
+                  min="1"
+                />
+                <button
+                  @click="handleAddToList(product)"
+                  class="flex-1 sm:flex-none py-2 px-4 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors duration-200"
+                >
+                  Add to List
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Display unmatched products directly under the category -->
+          <div v-for="product in group.unmatchedProducts" :key="product.productname + product.source_site" class="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-gray-50 rounded-lg shadow-sm">
             <div class="flex-1 mb-3 sm:mb-0">
               <strong class="text-lg block sm:inline">{{ product.productname }}</strong>
               <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
@@ -92,29 +126,41 @@ const handleAddToList = (product) => {
   emit('addToList', { ...product, quantity });
 };
 
-// Group products by category and similar names with the same size
-const groupedProducts = computed(() => {
-  if (!props.paginatedProducts?.length) return [];
-  
+// Group products by category and create subgroups for similar products
+const sortedGroupedProducts = computed(() => {
   const groups = {};
 
+  // Group products by category
   props.paginatedProducts.forEach((product) => {
     if (!product?.productname || !product.category) return; // Ensure category exists
 
     // Initialize category group if it doesn't exist
     if (!groups[product.category]) {
-      groups[product.category] = [];
+      groups[product.category] = { category: product.category, subGroups: [], unmatchedProducts: [] };
     }
 
-    // Check for similarity with existing products in the group
-    const existingGroup = groups[product.category];
-    const similarGroup = existingGroup.find(p => stringSimilarity(p.productname, product.productname) && p.size === product.size);
+    // Check for existing subgroups based on similarity and size
+    const similarGroup = groups[product.category].subGroups.find(subGroup => {
+      return subGroup.products.some(p => stringSimilarity(p.productname, product.productname) && p.size === product.size);
+    });
 
     if (similarGroup) {
-      similarGroup.quantity += product.quantity || 1; // Increment quantity if similar
+      similarGroup.products.push({ ...product, quantity: product.quantity || 1 });
     } else {
-      // Add product to the appropriate category group
-      groups[product.category].push({ ...product, quantity: product.quantity || 1 });
+      // If no similar group exists, check if it's unmatched
+      const isUnmatched = groups[product.category].subGroups.every(subGroup => {
+        return !subGroup.products.some(p => p.productname === product.productname && p.size === product.size);
+      });
+
+      if (isUnmatched) {
+        groups[product.category].unmatchedProducts.push({ ...product, quantity: product.quantity || 1 });
+      } else {
+        // Create a new subgroup if no similar group exists
+        groups[product.category].subGroups.push({
+          label: product.productname, // Use the product name as the label
+          products: [{ ...product, quantity: product.quantity || 1 }]
+        });
+      }
     }
   });
 
@@ -130,28 +176,10 @@ const stringSimilarity = (str1, str2) => {
   return matchCount / longer.length >= 0.9; // 90% match
 };
 
-// Sort the grouped products based on size and then price
-const sortedGroupedProducts = computed(() => {
-  const sorted = [...groupedProducts.value];
-
-  sorted.forEach(group => {
-    group.sort((a, b) => {
-      // Sort by size first
-      const sizeComparison = (a.size || '').localeCompare(b.size || '');
-      if (sizeComparison !== 0) return sizeComparison;
-
-      // Then sort by price
-      return a.current_price - b.current_price;
-    });
-  });
-  
-  return sorted;
-});
-
 // Display not categorized products
 const notCategorizedProducts = computed(() => {
   return props.paginatedProducts.filter(product => {
-    return !groupedProducts.value.some(group => group.includes(product)) && !product.category;
+    return !sortedGroupedProducts.value.some(group => group.subGroups.flat().includes(product)) && !product.category;
   });
 });
 
