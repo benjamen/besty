@@ -20,7 +20,7 @@
         "price_history",
         "last_updated",
         "last_checked",
-        "breadcrumbs"
+        "product_categories"
     ],
     "fields": [
         {
@@ -38,8 +38,9 @@
         },
         {
             "fieldname": "category",
-            "fieldtype": "Data",
-            "label": "Category"
+            "fieldtype": "Link",
+            "label": "Category",
+            "options": "Product Category"
         },
         {
             "fieldname": "source_site",
@@ -96,10 +97,10 @@
             "label": "Last Checked"
         },
         {
-            "fieldname": "breadcrumbs",
+            "fieldname": "product_categories",
             "fieldtype": "Table",
-            "label": "Breadcrumbs",
-            "options": "Breadcrumb Item"
+            "label": "Product Categories",
+            "options": "Product Category"
         }
     ],
     "index_web_pages_for_search": 1,
