@@ -5,9 +5,21 @@
     "doctype": "DocType",
     "engine": "InnoDB",
     "field_order": [
-        "section_break_jxph"
+        "category_name",
+        "category_url"
     ],
     "fields": [
+        {
+            "fieldname": "category_name",
+            "fieldtype": "Data",
+            "label": "Category Name",
+            "reqd": 1
+        },
+        {
+            "fieldname": "category_url",
+            "fieldtype": "Data",
+            "label": "Category URL"
+        },
         {
             "fieldname": "section_break_jxph",
             "fieldtype": "Section Break"
