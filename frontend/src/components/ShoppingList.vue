@@ -1,3 +1,4 @@
+<!-- ShoppingList.vue-->
 <template>
   <div>
     <!-- New List Modal -->
@@ -133,8 +134,8 @@ const props = defineProps({
   show: Boolean,
   items: {
     type: Array,
-    default: () => []
-  }
+    default: () => [],
+  },
 });
 
 const emit = defineEmits(['remove-item', 'export', 'update:items']);
@@ -143,8 +144,8 @@ const emit = defineEmits(['remove-item', 'export', 'update:items']);
 const showNewListModal = ref(false);
 const showListSelectionModal = ref(false);
 const newListName = ref('');
-const currentListId = ref(''); // Store the list ID
-const displayListName = ref(''); // Store the display name
+const currentListId = ref('');
+const displayListName = ref('');
 
 // Resource for shopping lists
 const shoppingLists = createListResource({
@@ -181,11 +182,6 @@ const getGroupSubtotal = (group) => {
   }, 0);
 };
 
-// Watch for changes in items prop
-watch(() => props.items, async (newItems) => {
-  await saveCurrentList();
-}, { deep: true });
-
 // Create a new shopping list
 const createList = async () => {
   if (!newListName.value) {
@@ -194,12 +190,11 @@ const createList = async () => {
   }
 
   try {
-    // Fetch existing shopping lists to check for duplicates
     const existingLists = await shoppingLists.fetch({
       params: {
         doctype: 'Shopping List',
-        filters: { list_name: newListName.value }
-      }
+        filters: { list_name: newListName.value },
+      },
     });
 
     if (existingLists && existingLists.length > 0) {
@@ -209,17 +204,18 @@ const createList = async () => {
 
     const response = await shoppingLists.insert.submit({
       list_name: newListName.value,
-      items: []
+      items: [],
     });
 
     if (response && response.name) {
-      currentListId.value = response.name; // Store the ID
-      displayListName.value = newListName.value; // Store the display name
+      currentListId.value = response.name;
+      displayListName.value = newListName.value;
       showNewListModal.value = false;
       await shoppingLists.fetch();
-      await saveCurrentList();
+      emit('saveCurrentList');
     } else {
-      throw new Error('Failed to create shopping list, no name returned.');
+      console.error('Error creating shopping list, no name returned.');
+      alert('Failed to create shopping list.'); // More generic error message
     }
   } catch (error) {
     console.error('Error creating shopping list:', error);
@@ -227,7 +223,6 @@ const createList = async () => {
   }
 };
 
-// Save the current list to the database
 const saveCurrentList = async () => {
   if (!currentListId.value) {
     alert('Please select or create a list first');
@@ -235,11 +230,12 @@ const saveCurrentList = async () => {
   }
 
   try {
-    const formattedItems = props.items.map(item => ({
-      product: item.productname,
+    const formattedItems = props.items.map((item) => ({
+      product: item.name,  // Include the product's primary key (name)
+      productname: item.productname,  // Ensure productname is included
       price: item.current_price,
       quantity: item.quantity,
-      doctype: 'Shopping Item'
+      doctype: 'Shopping Item',
     }));
 
     const shoppingListResource = createResource({
@@ -248,15 +244,16 @@ const saveCurrentList = async () => {
         doctype: 'Shopping List',
         name: currentListId.value,
         fieldname: 'shopping_items',
-        value: formattedItems
-      }
+        value: formattedItems,
+      },
     });
 
     const response = await shoppingListResource.fetch();
-    
+
     if (response && response.name) {
       alert('Shopping list saved successfully!');
     } else {
+      console.error('Error saving shopping list:', response); // Log the full response
       alert('Failed to save shopping list. Please check the console for details.');
     }
   } catch (error) {
@@ -266,7 +263,7 @@ const saveCurrentList = async () => {
 };
 
 // Remove an item from the list
-const removeItem = async (item) => {
+const removeItem = (item) => {
   emit('remove-item', item);
 };
 
@@ -280,6 +277,7 @@ const confirmSelection = () => {
 };
 
 // Handle the change of the selected list
+
 const handleListChange = async () => {
   if (currentListId.value) {
     try {
@@ -287,36 +285,49 @@ const handleListChange = async () => {
         url: '/api/method/frappe.client.get',
         params: {
           doctype: 'Shopping List',
-          name: currentListId.value
-        }
+          name: currentListId.value,
+        },
       });
-      
+
       await shoppingListResource.fetch();
-      
-      // Set the display name from the fetched data
+
       if (shoppingListResource.data && shoppingListResource.data.list_name) {
         displayListName.value = shoppingListResource.data.list_name;
       }
 
       if (shoppingListResource.data && shoppingListResource.data.shopping_items) {
-        const transformedItems = await Promise.all(shoppingListResource.data.shopping_items.map(async (item) => {
-          const productResource = createResource({
-            url: '/api/method/frappe.client.get',
-            params: {
-              doctype: 'Product Item',
-              name: item.name
+        // First, fetch the complete product details for each item
+        const productDetails = await Promise.all(
+          shoppingListResource.data.shopping_items.map(async (item) => {
+            const productResource = createResource({
+              url: '/api/method/frappe.client.get',
+              params: {
+                doctype: 'Product Item',
+                name: item.product,
+              },
+            });
+            
+            try {
+              await productResource.fetch();
+              return productResource.data;
+            } catch (error) {
+              console.error(`Error fetching product details for ${item.product}:`, error);
+              return null;
             }
-          });
-          
-          await productResource.fetch();
+          })
+        );
+
+        // Transform items with complete product information
+        const transformedItems = shoppingListResource.data.shopping_items.map((item, index) => {
+          const productInfo = productDetails[index];
           return {
-            name: item.product,
-            productname: productResource.data.productname,
+            name: item.product, // The product ID
+            productname: productInfo ? productInfo.productname : item.productname, // Use fetched product name
             current_price: item.price,
             quantity: item.quantity,
-            source_site: productResource.data.source_site
+            source_site: productInfo ? productInfo.source_site : item.source_site,
           };
-        }));
+        });
 
         emit('update:items', transformedItems);
       }
@@ -325,6 +336,11 @@ const handleListChange = async () => {
     }
   }
 };
+
+// Watch for changes in items prop
+watch(() => props.items, async (newItems) => {
+  await saveCurrentList();
+}, { deep: true });
 
 // Fetch the shopping lists on component mount
 onMounted(async () => {

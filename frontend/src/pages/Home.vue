@@ -1,3 +1,4 @@
+<!-- Home.vue-->
 <template>
   <div class="bg-gray-50 min-h-screen">
     <!-- Title Section -->
@@ -81,30 +82,29 @@ const currentPage = ref(0);
 const isLoading = ref(true);
 const showShoppingList = ref(true);
 const pageSize = 10;
-const sortOption = ref('category'); // Add this line for sorting
+const sortOption = ref('category');
 
 // Product resource
 const products = createListResource({
   doctype: 'Product Item',
   fields: [
-    'product_id', 
-    'productname', 
-    'category', 
-    'source_site', 
-    'size', 
-    'image_url', 
-    'unit_price', 
-    'unit_name', 
-    'original_unit_quantity', 
-    'current_price', 
-    'price_history', 
-    'last_updated'
+    'name',
+    'productname',
+    'category',
+    'source_site',
+    'size',
+    'image_url',
+    'unit_price',
+    'unit_name',
+    'original_unit_quantity',
+    'current_price',
+    'price_history',
+    'last_updated',
   ],
   orderBy: 'last_updated desc',
   start: 0,
   pageLength: 50000,
 });
-
 
 // Computed properties
 const filteredProducts = computed(() => {
@@ -138,7 +138,6 @@ const filteredProducts = computed(() => {
   return results;
 });
 
-
 const totalPages = computed(() => Math.ceil(filteredProducts.value.length / pageSize));
 const hasNextPage = computed(() => currentPage.value < totalPages.value - 1);
 const hasPrevPage = computed(() => currentPage.value > 0);
@@ -156,7 +155,7 @@ const extractCategories = () => {
 
 const addToList = (product) => {
   const existingItem = selectedItems.value.find(
-    (item) => item.productname === product.productname && item.source_site === product.source_site
+    (item) => item.name === product.name
   );
 
   if (existingItem) {
@@ -168,22 +167,20 @@ const addToList = (product) => {
   saveCurrentList();
 };
 
-const saveCurrentList = () => {
-  localStorage.setItem('shoppingList', JSON.stringify(selectedItems.value));
+const removeFromList = (product) => {
+  selectedItems.value = selectedItems.value.filter(
+    (item) => item.name !== product.name
+  );
+  saveCurrentList();
 };
 
 const updateItems = (newItems) => {
   selectedItems.value = newItems;
+  saveCurrentList();
 };
 
-const removeFromList = (product) => {
-  selectedItems.value = selectedItems.value.filter(
-    (item) => item.productname !== product.productname
-  );
-};
-
-const getGroupSubtotal = (group) => {
-  return group.reduce((total, item) => total + item.current_price * item.quantity, 0);
+const saveCurrentList = () => {
+  localStorage.setItem('shoppingList', JSON.stringify(selectedItems.value));
 };
 
 const exportToXLS = () => {
@@ -200,14 +197,23 @@ const exportToXLS = () => {
       exportData.push({ productname: `=== ${source} ===`, current_price: '', quantity: '', total: '' });
 
       group.forEach(item => {
-        exportData.push({ ...item, total: item.current_price * item.quantity });
+        exportData.push({
+          name: item.name,
+          productname: item.productname,
+          current_price: item.current_price,
+          quantity: item.quantity,
+          total: item.current_price * item.quantity
+        });
       });
 
-      exportData.push({ productname: 'Subtotal', current_price: '', quantity: '', total: getGroupSubtotal(group) });
+      const groupSubtotal = group.reduce((total, item) => 
+        total + (item.current_price * item.quantity), 0);
+      exportData.push({ productname: 'Subtotal', current_price: '', quantity: '', total: groupSubtotal });
       exportData.push({ productname: '', current_price: '', quantity: '', total: '' });
     });
 
-    const totalPrice = selectedItems.value.reduce((total, item) => total + item.current_price * item.quantity, 0);
+    const totalPrice = selectedItems.value.reduce((total, item) => 
+      total + item.current_price * item.quantity, 0);
     exportData.push({ productname: 'GRAND TOTAL', current_price: '', quantity: '', total: totalPrice });
 
     const ws = XLSX.utils.json_to_sheet(exportData);
@@ -239,13 +245,34 @@ const clearSearch = () => {
 
 // Watch for data changes
 watch(products, (newData) => {
-  allProducts.value = (newData?.data || []).map((product) => ({ ...product, quantity: 1 }));
+  allProducts.value = (newData?.data || []).map((product) => ({
+    ...product, 
+    quantity: 1, 
+  }));
   extractCategories();
   isLoading.value = false;
 });
 
+watch(selectedItems, (newItems) => {
+  saveCurrentList();
+}, { deep: true });
+
+// On page load, restore shopping list from localStorage
 onMounted(async () => {
   try {
+    const savedList = localStorage.getItem('shoppingList');
+    if (savedList) {
+      // Load the list and update missing product details
+      const parsedList = JSON.parse(savedList);
+      for (const item of parsedList) {
+        const fullProduct = allProducts.value.find(product => product.name === item.name);
+        if (fullProduct) {
+          item.productname = fullProduct.productname; // Ensure productname exists
+        }
+      }
+      selectedItems.value = parsedList;
+    }
+
     await products.fetch();
   } catch (error) {
     console.error('Error fetching products:', error);
