@@ -32,8 +32,7 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Product Name",
-   "reqd": 1,
-   "unique": 1
+   "reqd": 1
   },
   {
    "fieldname": "category",
@@ -104,7 +103,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-01-08 16:51:21.268296",
+ "modified": "2025-01-08 17:22:13.349666",
  "modified_by": "Administrator",
  "module": "Besty",
  "name": "Product Item",
