@@ -1,52 +1,43 @@
 {
-    "actions": [],
-    "allow_rename": 1,
-    "creation": "2025-01-08 16:28:02.568951",
-    "doctype": "DocType",
-    "engine": "InnoDB",
-    "field_order": [
-        "category_name",
-        "category_url"
-    ],
-    "fields": [
-        {
-            "fieldname": "category_name",
-            "fieldtype": "Data",
-            "label": "Category Name",
-            "reqd": 1
-        },
-        {
-            "fieldname": "category_url",
-            "fieldtype": "Data",
-            "label": "Category URL"
-        },
-        {
-            "fieldname": "section_break_jxph",
-            "fieldtype": "Section Break"
-        }
-    ],
-    "index_web_pages_for_search": 1,
-    "links": [],
-    "modified": "2025-01-08 16:28:02.568951",
-    "modified_by": "Administrator",
-    "module": "Besty",
-    "name": "Product Category",
-    "owner": "Administrator",
-    "permissions": [
-        {
-            "create": 1,
-            "delete": 1,
-            "email": 1,
-            "export": 1,
-            "print": 1,
-            "read": 1,
-            "report": 1,
-            "role": "System Manager",
-            "share": 1,
-            "write": 1
-        }
-    ],
-    "sort_field": "modified",
-    "sort_order": "DESC",
-    "states": []
+ "actions": [],
+ "autoname": "autoincrement",
+ "creation": "2025-01-08 16:28:02.568951",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "category_name",
+  "category_url",
+  "section_break_jxph"
+ ],
+ "fields": [
+  {
+   "fieldname": "category_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Category Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "category_url",
+   "fieldtype": "Data",
+   "label": "Category URL"
+  },
+  {
+   "fieldname": "section_break_jxph",
+   "fieldtype": "Section Break"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-01-08 17:04:17.306271",
+ "modified_by": "Administrator",
+ "module": "Besty",
+ "name": "Product Category",
+ "naming_rule": "Autoincrement",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
 }
