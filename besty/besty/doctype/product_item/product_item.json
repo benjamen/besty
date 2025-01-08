@@ -36,9 +36,8 @@
   },
   {
    "fieldname": "category",
-   "fieldtype": "Link",
-   "label": "Category",
-   "options": "Product Category"
+   "fieldtype": "Data",
+   "label": "Category"
   },
   {
    "fieldname": "source_site",
@@ -103,7 +102,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-01-08 17:22:13.349666",
+ "modified": "2025-01-08 19:09:04.825729",
  "modified_by": "Administrator",
  "module": "Besty",
  "name": "Product Item",
