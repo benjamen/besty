@@ -86,18 +86,32 @@ const sortOption = ref('category'); // Add this line for sorting
 // Product resource
 const products = createListResource({
   doctype: 'Product Item',
-  fields: ['productname', 'current_price', 'source_site', 'category', 'size', 'unit_price', 'unit_name'],
-  orderBy: 'creation desc',
+  fields: [
+    'product_id', 
+    'productname', 
+    'category', 
+    'source_site', 
+    'size', 
+    'image_url', 
+    'unit_price', 
+    'unit_name', 
+    'original_unit_quantity', 
+    'current_price', 
+    'price_history', 
+    'last_updated'
+  ],
+  orderBy: 'last_updated desc',
   start: 0,
   pageLength: 50000,
 });
+
 
 // Computed properties
 const filteredProducts = computed(() => {
   const query = searchQuery.value.trim().toLowerCase();
   let results = allProducts.value;
 
-  // Filter by category (using original category names)
+  // Filter by category
   if (selectedCategory.value) {
     results = results.filter(product => product.category === selectedCategory.value);
   }
@@ -111,17 +125,19 @@ const filteredProducts = computed(() => {
     }).map(result => result.obj);
   }
 
-  // Sort products based on the selected sort option
+  // Sort based on selected sort option
+  results = [...results]; // Clone to avoid modifying the original array
   if (sortOption.value === 'name') {
-    results.sort((a, b) => a.productname.localeCompare(b.productname));
+    results.sort((a, b) => (a.productname || '').localeCompare(b.productname || ''));
   } else if (sortOption.value === 'price') {
-    results.sort((a, b) => a.current_price - b.current_price);
+    results.sort((a, b) => (a.current_price || 0) - (b.current_price || 0));
   } else if (sortOption.value === 'category') {
-    results.sort((a, b) => a.category.localeCompare(b.category));
+    results.sort((a, b) => (a.category || '').localeCompare(b.category || ''));
   }
 
   return results;
 });
+
 
 const totalPages = computed(() => Math.ceil(filteredProducts.value.length / pageSize));
 const hasNextPage = computed(() => currentPage.value < totalPages.value - 1);
