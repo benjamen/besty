@@ -54,11 +54,20 @@ watch(localSelectedCategory, (newVal) => {
 
 // Emit search event with search query and selected category
 const handleSearch = () => {
-  emit('search', { 
-    searchQuery: normalizeSearchQuery(localSearchQuery.value), 
-    selectedCategory: localSelectedCategory.value 
+  const normalizedQuery = normalizeSearchQuery(localSearchQuery.value);
+
+  const filteredProducts = products.filter(product => {
+    return (
+      normalizedQuery.every(queryWord =>
+        product.name.toLowerCase().includes(queryWord) ||
+        product.category.toLowerCase().includes(queryWord)
+      )
+    );
   });
-}
+
+  emit('search', filteredProducts);
+};
+
 
 // Clear search functionality
 const clearSearch = () => {
@@ -92,10 +101,11 @@ const formatCategoryName = (category) => {
 // Function to normalize the search query
 const normalizeSearchQuery = (query) => {
   return query
-    .toLowerCase() // Convert to lowercase for case-insensitive matching
-    .trim() // Remove leading and trailing whitespace
-    .split(/\s+/) // Split by whitespace to handle multiple words
+    .toLowerCase() // Ensure case-insensitivity
+    .trim() // Remove leading/trailing whitespace
+    .split(/\s+/) // Split into individual words for multi-word searches
     .map(word => word.replace(/['’]/g, '')) // Remove apostrophes
-    .filter(word => word.length > 0); // Filter out empty words
+    .filter(word => word.length > 0); // Remove empty strings
 };
+
 </script>
