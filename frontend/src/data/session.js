@@ -4,13 +4,16 @@ import { computed, reactive, onMounted } from 'vue';
 import { createResource } from 'frappe-ui';
 import { userResource } from './user';
 
-// Get CSRF token from meta tag
-const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+// Function to get CSRF token
+const getCsrfToken = () => {
+  const csrfTokenMeta = document.querySelector('meta[name="csrf-token"]');
+  return csrfTokenMeta ? csrfTokenMeta.getAttribute('content') : '';
+};
 
-// Function to get the session user
-export function sessionUser() {
+// Function to get the session user for frontend
+export function sessionUserFrontend() {
   const cookies = new URLSearchParams(document.cookie.split('; ').join('&'));
-  let _sessionUser = cookies.get('user_id');
+  let _sessionUser = cookies.get('frontend_user_id');
   if (_sessionUser === 'Guest') {
     _sessionUser = null;
   }
@@ -25,28 +28,28 @@ export const session = reactive({
       return {
         usr: email,
         pwd: password,
-        csrf_token: csrfToken, // Include CSRF token
+        csrf_token: getCsrfToken(), // Include CSRF token
       };
     },
     onSuccess(data) {
       userResource.reload();
-      session.user = sessionUser();
+      session.user = sessionUserFrontend();
       session.login.reset();
 
-      // Force redirect to the Vue landing page
-      router.replace('/');
+      // Force redirect to the frontend landing page
+      router.replace('/frontend');
     },
   }),
   logout: createResource({
     url: 'logout',
     headers: {
-      'X-CSRF-Token': csrfToken, // Include CSRF token
+      'X-CSRF-Token': getCsrfToken(), // Include CSRF token
     },
     onSuccess() {
       userResource.reset();
-      session.user = sessionUser();
+      session.user = sessionUserFrontend();
 
-      // Redirect to the front-end landing page after logout
+      // Redirect to the frontend landing page after logout
       router.replace({ name: 'Home' });
 
       // Force a page refresh to clear any residual state
@@ -55,7 +58,7 @@ export const session = reactive({
       }, 100); // Small delay ensures the router navigation completes
     },
   }),
-  user: sessionUser(),
+  user: sessionUserFrontend(),
   isLoggedIn: computed(() => !!session.user),
 });
 
@@ -63,5 +66,8 @@ export const session = reactive({
 onMounted(() => {
   if (!session.isLoggedIn) {
     router.replace('/login');
+  } else {
+    // Ensure CSRF token is included in the headers of your API requests
+    axios.defaults.headers.common['X-CSRF-Token'] = getCsrfToken();
   }
 });
