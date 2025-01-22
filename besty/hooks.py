@@ -245,4 +245,9 @@ app_license = "mit"
 
 website_route_rules = [{'from_route': '/Home/<path:app_path>', 'to_route': 'Home'}, {'from_route': '/Home/<path:app_path>', 'to_route': 'Home'},]
 
-
+doc_events = {
+    "Product Item": {  # Removed the typo (extra colon after "Product Item")
+        "after_insert": "besty.frappe_product_classifier.classify_product",
+        "on_update": "besty.frappe_product_classifier.classify_product"
+    },
+}
