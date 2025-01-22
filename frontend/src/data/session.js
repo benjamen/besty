@@ -1,8 +1,7 @@
 import axios from 'axios';
 import router from '@/router';
-import { computed, reactive } from 'vue';
+import { computed, reactive, onMounted } from 'vue';
 import { createResource } from 'frappe-ui';
-
 import { userResource } from './user';
 
 // Get CSRF token from meta tag
@@ -58,4 +57,11 @@ export const session = reactive({
   }),
   user: sessionUser(),
   isLoggedIn: computed(() => !!session.user),
+});
+
+// Verify user login on component mount
+onMounted(() => {
+  if (!session.isLoggedIn) {
+    router.replace('/login');
+  }
 });
