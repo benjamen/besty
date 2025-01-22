@@ -1,9 +1,14 @@
+import axios from 'axios';
 import router from '@/router';
 import { computed, reactive } from 'vue';
 import { createResource } from 'frappe-ui';
 
 import { userResource } from './user';
 
+// Get CSRF token from meta tag
+const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+// Function to get the session user
 export function sessionUser() {
   const cookies = new URLSearchParams(document.cookie.split('; ').join('&'));
   let _sessionUser = cookies.get('user_id');
@@ -13,6 +18,7 @@ export function sessionUser() {
   return _sessionUser;
 }
 
+// Reactive session object
 export const session = reactive({
   login: createResource({
     url: 'login',
@@ -20,6 +26,7 @@ export const session = reactive({
       return {
         usr: email,
         pwd: password,
+        csrf_token: csrfToken, // Include CSRF token
       };
     },
     onSuccess(data) {
@@ -33,6 +40,9 @@ export const session = reactive({
   }),
   logout: createResource({
     url: 'logout',
+    headers: {
+      'X-CSRF-Token': csrfToken, // Include CSRF token
+    },
     onSuccess() {
       userResource.reset();
       session.user = sessionUser();
