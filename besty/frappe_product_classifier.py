@@ -13,8 +13,7 @@ class ProductClassifier:
         self.threshold = threshold
         self.ignore_words = {'pams', 'brushed', 'mix', 'bag', 'wash', 'woolworths', 'fresh', 'bagged', 'value', 'kg', 'g', 'ml', 'l', 'pack', 'pk', 'ea','prepacked'}
         
-
-
+        
         self.product_type_keywords = {
             # Dairy & Eggs
             'Dairy & Eggs': [
@@ -307,9 +306,9 @@ class ProductClassifier:
         }
 
 
-        self.product_type_keywords['Dairy & Eggs'].extend([
-        'cream yoghurt', 'greek yoghurt', 'strawberry yoghurt'
-        ])
+            # Dairy & Eggs
+            # Add your product categories and keywords here
+
         
         # Create reverse mapping with plural forms and embeddings for keywords
         self.keyword_to_category = {}
@@ -385,79 +384,100 @@ class ProductClassifier:
         return [w for w in words if w not in self.ignore_words and not any(c.isdigit() for c in w)]
 
     def classify_single_product(self, product_name):
-        try:
-            words = self.get_all_words(product_name)
-            
-            if not words:
-                return {'category': 'Unknown', 'confidence': 0.0, 'matched_word': '', 'match_type': 'none'}
-    
-            
-            if not words:
-                return {'category': 'Unknown', 'confidence': 0.0, 'matched_word': '', 'match_type': 'none'}
-            
-            # Check for exact matches across all words
-            for match_strategy in ['last_word', 'full_scan', 'consecutive_pairs']:
-                result = self._match_words(words, match_strategy)
-                if result['category'] != 'Unknown':
-                    return result
-            
-            # Fallback to fuzzy and semantic matching
-            result = self._semantic_match(words[-1])
-            return result if result['category'] != 'Unknown' else {'category': 'Unknown', 'confidence': 0.0, 'matched_word': '', 'match_type': 'none'}
 
-        except Exception as e:
-            frappe.log_error(f"Classification error for {product_name}: {str(e)}")
-            return {'category': 'Unknown', 'confidence': 0.0, 'matched_word': '', 'match_type': 'error'}
-
-
-
-    def _match_words(self, words, strategy='last_word'):
-            if strategy == 'last_word':
-                # Original last word priority
-                category = self.keyword_to_category.get(words[-1])
-                if category:
-                    return {'category': category, 'confidence': 1.0, 'matched_word': words[-1], 'match_type': 'exact_last_word'}
+        words = self.get_all_words(product_name)
+        
+        if not words:
+            return {
+                'category': 'Unknown',
+                'confidence': 0.0,
+                'matched_word': '',
+                'match_type': 'none'
+            }
+        
+        # 1. Try exact match with last word
+        last_word = words[-1]
+        category = self.keyword_to_category.get(last_word)
+        if category:
+            return {
+                'category': category,
+                'confidence': 1.0,
+                'matched_word': last_word,
+                'match_type': 'exact_last_word'
+            }
+        
+        # 2. Try exact matches with other words (from right to left)
+        for word in reversed(words[:-1]):  # Exclude last word as it was already checked
+            category = self.keyword_to_category.get(word)
+            if category:
+                return {
+                    'category': category,
+                    'confidence': 1.0,
+                    'matched_word': word,
+                    'match_type': 'exact_other_word'
+                }
+        
+        # 3. Only if no exact matches found, try fuzzy matching
+        # Try last word first for fuzzy matching
+        all_keywords = list(self.keyword_embeddings.keys())
+        close_matches = get_close_matches(last_word, all_keywords, n=1, cutoff=0.8)
+        if close_matches:
+            matched_word = close_matches[0]
+            return {
+                'category': self.keyword_to_category[matched_word],
+                'confidence': 0.9,
+                'matched_word': matched_word,
+                'match_type': 'fuzzy'
+            }
+        
+        # 4. Finally, try semantic matching as last resort
+        if last_word:
+            word_embedding = self.model.encode(last_word, convert_to_tensor=True)
+            best_score = 0
+            best_match = None
             
-            elif strategy == 'full_scan':
-                # Scan all words from right to left
-                for word in reversed(words):
-                    category = self.keyword_to_category.get(word)
-                    if category:
-                        return {'category': category, 'confidence': 1.0, 'matched_word': word, 'match_type': 'exact_word'}
-            
-            elif strategy == 'consecutive_pairs':
-                # Check consecutive word pairs (helps with compound terms)
-                for i in range(len(words) - 1):
-                    pair = f"{words[i]} {words[i+1]}"
-                    full_pair = self.keyword_to_category.get(pair)
-                    if full_pair:
-                        return {'category': full_pair, 'confidence': 1.0, 'matched_word': pair, 'match_type': 'exact_pair'}
-            
-            return {'category': 'Unknown', 'confidence': 0.0, 'matched_word': '', 'match_type': 'none'}
+            for keyword, keyword_embedding in self.keyword_embeddings.items():
+                similarity = util.cos_sim(word_embedding, keyword_embedding).item()
+                if similarity > best_score:
+                    best_score = similarity
+                    best_match = keyword
 
-
+            if best_score > self.threshold:
+                return {
+                    'category': self.keyword_to_category[best_match],
+                    'confidence': round(best_score, 3),
+                    'matched_word': best_match,
+                    'match_type': 'semantic'
+                }
+        
+        # If nothing found, return Unknown
+        return {
+            'category': 'Unknown',
+            'confidence': 0.0,
+            'matched_word': '',
+            'match_type': 'none'
+        }
 
 def setup_product_classifier():
     """Initialize the ProductClassifier as a global singleton"""
     if not hasattr(frappe.local, 'product_classifier'):
         frappe.local.product_classifier = ProductClassifier()
 
-def classify_product(doc, method, verbose=False):
+def classify_product(doc, method):
     """
-    Frappe hook handler for Item DocType with optional verbose logging
-    
-    Args:
-        doc: Frappe document
-        method: Calling method
-        verbose: If True, shows detailed classification messages
+    Frappe hook handler for Item DocType
+    This function runs after a new Item is inserted or updated
     """
     try:
+        # Ensure classifier is initialized
         setup_product_classifier()
         
+        # Get product name
         productname = doc.productname
         if not productname:
             raise ValueError("Product name is missing")
         
+        # Classify the product
         classification = frappe.local.product_classifier.classify_single_product(productname)
         
         if not classification:
@@ -465,14 +485,16 @@ def classify_product(doc, method, verbose=False):
         
         matched_word_sentence_case = classification['matched_word'].capitalize()
 
+        # Update the item document with classification results
         if classification['category'] != 'Unclassified':
             doc.db_set('category', matched_word_sentence_case)
             
+            # Populate product_categories child table
             product_categories = [
                 {"doctype": "Product Category", "category_name": classification['category']},
                 {"doctype": "Product Category", "category_name": matched_word_sentence_case}
             ]
-            
+            # Ensure product_categories is initialized as a list if not present
             if not doc.get('product_categories'):
                 doc.product_categories = []
             
@@ -481,21 +503,18 @@ def classify_product(doc, method, verbose=False):
             
             frappe.db.commit()
             
-            if verbose:
-                frappe.msgprint(_(f"Product classified as: {classification['category']} "
-                                f"(Confidence: {classification['confidence']})"))
+            frappe.msgprint(_(f"Product classified as: {classification['category']} "
+                            f"(Confidence: {classification['confidence']})"))
         else:
-            if verbose:
-                frappe.msgprint(_("Could not classify product automatically"))
+            frappe.msgprint(_("Could not classify product automatically"))
             
     except Exception as e:
+        # Enhanced error logging
         error_message = f"Product Classification Error: {str(e)}\n"
         error_message += f"Document: {json.dumps(doc.as_dict(), indent=2)}\n"
         error_message += f"Method: {method}\n"
         frappe.log_error(error_message, "Product Classification")
-        
-        if verbose:
-            frappe.msgprint(_("Error during product classification. Check error logs."))
+        frappe.msgprint(_("Error during product classification. Check error logs."))
 
 
 def classify_all_products():
@@ -528,25 +547,4 @@ def classify_all_products():
             frappe.log_error(error_message, "Classify All Products Error")
             frappe.msgprint(_(f"Error classifying product {item.name}. Check error logs."))
 
-def _semantic_match(self, word):
-    """Semantic matching for a single word"""
-    if word:
-        word_embedding = self.model.encode(word, convert_to_tensor=True)
-        best_score = 0
-        best_match = None
-        
-        for keyword, keyword_embedding in self.keyword_embeddings.items():
-            similarity = util.cos_sim(word_embedding, keyword_embedding).item()
-            if similarity > best_score:
-                best_score = similarity
-                best_match = keyword
 
-        if best_score > self.threshold:
-            return {
-                'category': self.keyword_to_category[best_match],
-                'confidence': round(best_score, 3),
-                'matched_word': best_match,
-                'match_type': 'semantic'
-            }
-    
-    return {'category': 'Unknown', 'confidence': 0.0, 'matched_word': '', 'match_type': 'none'}
