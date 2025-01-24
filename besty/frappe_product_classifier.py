@@ -33,6 +33,7 @@ class ProductClassifier:
                 'oat milk', 'coconut milk', 'cashew milk', 'milk powder', 
                 'clarified butter', 'probiotic drinks', 'quark', 'clotted cream',
                 'soy milk','almond milk','coconut milk','lactose free milk','buttermilk',
+                'uht milk'
             ],
 
             # Bread & Bakery
