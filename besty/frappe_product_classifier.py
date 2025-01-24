@@ -167,7 +167,8 @@ class ProductClassifier:
                 'squash', 'acorn squash', 'butternut squash', 
                 'spaghetti squash', 'gourd', 'taro', 'cassava',
                 'mandarins', 'slaw', 'rocket','pitahaya','dragonfruit',
-                'paw paw','lettuce','salad','coleslaw','cabbage slaw','kumara'
+                'paw paw','lettuce','salad','coleslaw','cabbage slaw',
+                'kumara', 'cos mix'
             ],
 
             # Meat & Seafood
