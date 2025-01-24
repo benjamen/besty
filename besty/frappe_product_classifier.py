@@ -56,7 +56,7 @@ class ProductClassifier:
                 'English muffin', 'hot cross bun', 'shortbread', 'biscuit', 
                 'cracker', 'grissini', 'pavlova', 'macaron', 'cookie', 
                 'gingerbread', 'puff pastry', 'challah', 'matzo', 'baps', 
-                'wholemeal', 'batard','turnovers','pizza bread'
+                'wholemeal', 'batard','turnovers','pizza bread','ginger kisses'
             ],
 
             # Beverages
