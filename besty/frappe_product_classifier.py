@@ -33,7 +33,7 @@ class ProductClassifier:
                 'oat milk', 'coconut milk', 'cashew milk', 'milk powder', 
                 'clarified butter', 'probiotic drinks', 'quark', 'clotted cream',
                 'soy milk','almond milk','coconut milk','lactose free milk','buttermilk',
-                'uht milk','cream cheese'
+                'uht milk','cream cheese','soy milk','almond milk','coconut milk',
             ],
 
             # Bread & Bakery
@@ -402,8 +402,8 @@ class ProductClassifier:
         if not specific_words:
             specific_words = [words[-1]]
         
-        # Try classification for specific words
-        for word in reversed(specific_words):
+        # Check for specific matches first
+        for word in specific_words:
             category = self.keyword_to_category.get(word)
             if category:
                 return {
@@ -413,7 +413,19 @@ class ProductClassifier:
                     'match_type': 'exact_specific_word'
                 }
         
-        # Semantic matching fallback
+        # Now check for multi-word phrases
+        multi_word_matches = [' '.join(specific_words[i:i+2]) for i in range(len(specific_words)-1)]
+        for multi_word in multi_word_matches:
+            category = self.keyword_to_category.get(multi_word)
+            if category:
+                return {
+                    'category': category,
+                    'confidence': 1.0,
+                    'matched_word': multi_word,
+                    'match_type': 'exact_multi_word_match'
+                }
+
+        # Fallback to semantic matching
         for word in reversed(specific_words):
             last_word_result = self.find_category(word)
             if last_word_result[0]:
