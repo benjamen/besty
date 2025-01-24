@@ -31,7 +31,8 @@ class ProductClassifier:
                 'evaporated milk', 'milkshake', 'ice cream', 'frozen yogurt', 
                 'whey', 'lactose-free milk', 'almond milk', 'soy milk', 
                 'oat milk', 'coconut milk', 'cashew milk', 'milk powder', 
-                'clarified butter', 'probiotic drinks', 'quark', 'clotted cream'
+                'clarified butter', 'probiotic drinks', 'quark', 'clotted cream',
+                'soy milk','almond milk','coconut milk','lactose free milk','buttermilk',
             ],
 
             # Bread & Bakery
