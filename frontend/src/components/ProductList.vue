@@ -22,72 +22,72 @@
           <h3 class="text-2xl font-bold text-gray-800">{{ formatCategoryName(group.category) }}</h3>
         </div>
 
-<!-- Products Section -->
-<div class="bg-white p-6 space-y-6">
-  <div v-if="group.singleProduct" class="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-white rounded-lg border border-gray-100 mb-6">
-    <img :src="group.products[0].image_url" alt="Product Image" class="w-24 h-24 object-cover mr-4" /> <!-- Added image -->
-    <div class="flex-1">
-      <strong class="text-lg block">{{ group.products[0].productname }}</strong>
-      <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
-        <p class="text-sm text-gray-600">Price: ${{ group.products[0].current_price }}</p>
-        <p class="text-sm text-gray-500">Source: {{ group.products[0].source_site }}</p>
-        <p class="text-sm text-gray-500">Category: {{ formatCategoryName(group.products[0].category) }}</p>
-        <p v-if="group.products[0].size" class="text-sm text-gray-500">Size: {{ group.products[0].size }}</p>
-        <p v-if="group.products[0].unit_price" class="text-sm text-gray-500">Unit Price: ${{ group.products[0].unit_price }}</p>
-        <p v-if="group.products[0].unit_name" class="text-sm text-gray-500">Unit: {{ group.products[0].unit_name }}</p>
-      </div>
-    </div>
-  </div>
-
-  <div v-else>
-    <div v-for="(subGroup, subIndex) in group.subGroups" :key="subIndex" class="mb-8">
-      <h4 class="font-semibold text-lg text-gray-700 mb-4">{{ subGroup.label }} ({{ subGroup.products.length }} matching items)</h4>
-      <div v-for="(product, productIndex) in subGroup.products" :key="product.productname + product.source_site" class="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-white rounded-lg border border-gray-100">
-        <img :src="product.image_url" alt="Product Image" class="w-24 h-24 object-cover mr-4" /> <!-- Added image -->
-        <div class="flex-1 mb-3 sm:mb-0">
-          <strong class="text-lg block sm:inline">{{ product.productname }}</strong>
-          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
-            <div class="flex items-center gap-2">
-              <p class="text-sm text-gray-600">Price: ${{ product.current_price }}</p>
-              <span
-                v-if="subGroup.products.length > 1 && productIndex > 0 && getPriceDifference(product, subGroup.products[0]) !== 0"
-                :class="{
-                  'px-2 py-1 text-xs font-medium rounded-full': true,
-                  'bg-red-100 text-red-800': getPriceDifference(product, subGroup.products[0]) > 0,
-                  'bg-green-100 text-green-800': getPriceDifference(product, subGroup.products[0]) < 0
-                }"
-              >
-                {{ formatPriceDifference(getPriceDifference(product, subGroup.products[0])) }}
-              </span>
+        <!-- Products Section -->
+        <div class="bg-white p-6 space-y-6">
+          <div v-if="group.singleProduct" class="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-white rounded-lg border border-gray-100 mb-6">
+            <img :src="group.products[0].image_url" alt="Product Image" class="w-24 h-24 object-cover mr-4" />
+            <div class="flex-1">
+              <strong class="text-lg block">{{ group.products[0].productname }}</strong>
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
+                <p class="text-sm text-gray-600">Price: ${{ group.products[0].current_price }}</p>
+                <p class="text-sm text-gray-500">Source: {{ group.products[0].source_site }}</p>
+                <p class="text-sm text-gray-500">Category: {{ formatCategoryName(group.products[0].category) }}</p>
+                <p v-if="group.products[0].size" class="text-sm text-gray-500">Size: {{ group.products[0].size }}</p>
+                <p v-if="group.products[0].unit_price" class="text-sm text-gray-500">Unit Price: ${{ group.products[0].unit_price }}</p>
+                <p v-if="group.products[0].unit_name" class="text-sm text-gray-500">Unit: {{ group.products[0].unit_name }}</p>
+              </div>
             </div>
-            <p class="text-sm text-gray-500">Source: {{ product.source_site }}</p>
-            <p class="text-sm text-gray-500">Category: {{ formatCategoryName(product.category) }}</p>
-            <p v-if="product.size" class="text-sm text-gray-500">Size: {{ product.size }}</p>
-            <p v-if="product.unit_price" class="text-sm text-gray-500">Unit Price: ${{ product.unit_price }}</p>
-            <p v-if="product.unit_name" class="text-sm text-gray-500">Unit: {{ product.unit_name }}</p>
+          </div>
+
+          <div v-else>
+            <div v-for="(subGroup, subIndex) in group.subGroups" :key="subIndex" class="mb-8">
+              <h4 class="font-semibold text-lg text-gray-700 mb-4">{{ subGroup.label }} ({{ subGroup.products.length }} matching items)</h4>
+              <div v-for="(product, productIndex) in subGroup.products" :key="product.productname + product.source_site" class="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-white rounded-lg border border-gray-100">
+                <img :src="product.image_url" alt="Product Image" class="w-24 h-24 object-cover mr-4" />
+                <div class="flex-1 mb-3 sm:mb-0">
+                  <strong class="text-lg block sm:inline">{{ product.productname }}</strong>
+                  <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
+                    <div class="flex items-center gap-2">
+                      <p class="text-sm text-gray-600">Price: ${{ product.current_price }}</p>
+                      <span
+                        v-if="subGroup.products.length > 1 && productIndex > 0 && getPriceDifference(product, subGroup.products[0]) !== 0"
+                        :class="{
+                          'px-2 py-1 text-xs font-medium rounded-full': true,
+                          'bg-red-100 text-red-800': getPriceDifference(product, subGroup.products[0]) > 0,
+                          'bg-green-100 text-green-800': getPriceDifference(product, subGroup.products[0]) < 0
+                        }"
+                      >
+                        {{ formatPriceDifference(getPriceDifference(product, subGroup.products[0])) }}
+                      </span>
+                    </div>
+                    <p class="text-sm text-gray-500">Source: {{ product.source_site }}</p>
+                    <p class="text-sm text-gray-500">Category: {{ formatCategoryName(product.category) }}</p>
+                    <p v-if="product.size" class="text-sm text-gray-500">Size: {{ product.size }}</p>
+                    <p v-if="product.unit_price" class="text-sm text-gray-500">Unit Price: ${{ product.unit_price }}</p>
+                    <p v-if="product.unit_name" class="text-sm text-gray-500">Unit: {{ product.unit_name }}</p>
+                  </div>
+                </div>
+                <div class="flex w-full sm:w-auto gap-2">
+                  <input
+                    v-model.number="product.quantity"
+                    type="number"
+                    placeholder="Qty"
+                    class="w-20 p-2 border border-gray-300 rounded-lg"
+                    min="1"
+                  />
+                  <button
+                    @click="handleAddToList(product)"
+                    class="flex-1 sm:flex-none py-2 px-4 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors duration-200"
+                  >
+                    Add to List
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="flex w-full sm:w-auto gap-2">
-          <input
-            v-model.number="product.quantity"
-            type="number"
-            placeholder="Qty"
-            class="w-20 p-2 border border-gray-300 rounded-lg"
-            min="1"
-          />
-          <button
-            @click="handleAddToList(product)"
-            class="flex-1 sm:flex-none py-2 px-4 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors duration-200"
-          >
-            Add to List
-          </button>
-        </div>
       </div>
     </div>
-  </div>
-</div>
-</div>
- </div>
 
     <div v-if="notCategorizedProducts.length" class="space-y-4">
       <h3 class="text-2xl font-bold text-gray-800 p-6">Not Categorized Products</h3>
@@ -164,42 +164,27 @@ const formatPriceDifference = (difference) => {
 const getMatchedString = (products) => {
   if (!products.length) return '';
 
-  // Filter by category and size
-  const category = products[0].category;
-  const size = products[0].size;
+  // Extract product names
+  const productNames = products.map(product => normalizeText(product.productname));
 
-  // Extract the product names that have the same category and size
-  const validProducts = products.filter(p => p.category === category && p.size === size);
-
-  // If no valid products, return a default label
-  if (!validProducts.length) return 'No matching products';
-
-  // Create a frequency map of words from valid product names
-  const wordCount = {};
-  validProducts.forEach(product => {
-    const words = normalizeText(product.productname).split(" ");
-    words.forEach(word => {
-      wordCount[word] = (wordCount[word] || 0) + 1;
-    });
+  // Create a list of unique variations (e.g., "Strawberry Flavour Milk", "Chocolate Flavour Milk")
+  const variations = new Set();
+  productNames.forEach(name => {
+    const words = name.split(" ").slice(1).join(" "); // Exclude the first word (brand)
+    variations.add(words);
   });
 
-  // Determine significant words (greater occurrences)
-  const significantWords = Object.keys(wordCount).filter(word => wordCount[word] > 1 || validProducts.length < 3);
+  // Create a variations string
+  const variationsString = Array.from(variations).join(", ");
 
-  // Create a matched string based on significant words
-  return significantWords.length > 0 ? capitalizeWords(significantWords.join(" ")) : validProducts[0].productname;
+  // Return the matched string
+  return `${variationsString}`;
 };
 
 // Function to check if two products are similar based on name and size
 const areProductsSimilar = (product1, product2) => {
   const normalizedName1 = normalizeText(product1.productname);
   const normalizedName2 = normalizeText(product2.productname);
-  const normalizedSize1 = normalizeSize(product1.size);
-  const normalizedSize2 = normalizeSize(product2.size);
-
-  // Check if sizes and categories are the same
-  const sizesMatch = normalizedSize1 === normalizedSize2;
-  const categoriesMatch = product1.category === product2.category;
 
   // Use Levenshtein distance for name similarity
   const distance = getLevenshteinDistance(normalizedName1, normalizedName2);
@@ -208,13 +193,7 @@ const areProductsSimilar = (product1, product2) => {
 
   const namesMatch = (1 - distance / maxLength) > similarityThreshold;
 
-  return sizesMatch && categoriesMatch && namesMatch;
-};
-
-// Normalize size values for comparison
-const normalizeSize = (size) => {
-  if (!size) return '';
-  return size.toLowerCase().trim();
+  return namesMatch;
 };
 
 // Levenshtein distance algorithm for name similarity
@@ -284,11 +263,18 @@ const sortedGroupedProducts = computed(() => {
         if (foundGroup) {
           foundGroup.products.push(product);
         } else {
-          subGroups.push({
+          // Create a new subgroup with the matched string as the label
+          foundGroup = {
             label: getMatchedString([product]),
             products: [product]
-          });
+          };
+          subGroups.push(foundGroup);
         }
+      });
+
+      // Update the label of each subgroup to reflect the matched string
+      subGroups.forEach(subGroup => {
+        subGroup.label = getMatchedString(subGroup.products);
       });
 
       return {
