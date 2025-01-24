@@ -22,7 +22,7 @@ class ProductClassifier:
                 'parmesan', 'gouda', 'feta', 'brie', 'camembert', 'blue cheese', 
                 'cream cheese', 'goat cheese', 'ricotta', 'yogurt', 'Greek yogurt', 
                 'flavored yogurt', 'plain yogurt','Mixed Berry Yoghurt', 'Strawberry Yoghurt',
-                  'cream', 'heavy cream', 
+                  'cream', 'heavy cream', 'apricot yoghurt', 'vanilla yoghurt',
                 'whipping cream', 'double cream', 'sour cream', 'custard', 
                 'margarine', 'eggs', 'chicken eggs', 'duck eggs', 'quail eggs', 
                 'buttermilk', 'kefir', 'curd', 'paneer', 'ghee', 'spread', 
