@@ -23,7 +23,7 @@ class ProductClassifier:
                 'cream cheese', 'goat cheese', 'ricotta', 'yogurt', 'Greek yogurt', 
                 'flavored yogurt', 'plain yogurt','mixed berry Yoghurt', 'strawberry yoghurt',
                 'cream', 'heavy cream', 'apricot yoghurt', 'vanilla yoghurt','vanilla bean yoghurt',
-                'banana yoghurt', 'peach yoghurt', 'mango yoghurt', 'raspberry yoghurt',
+                'banana yoghurt', 'peach yoghurt', 'mango yoghurt', 'raspberry yoghurt','boysenberries yoghurt',
                 'whipping cream', 'double cream', 'sour cream', 'custard', 
                 'margarine', 'eggs', 'chicken eggs', 'duck eggs', 'quail eggs', 
                 'buttermilk', 'kefir', 'curd', 'paneer', 'ghee', 'spread', 
