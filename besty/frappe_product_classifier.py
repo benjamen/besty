@@ -368,18 +368,36 @@ class ProductClassifier:
                 'matched_word': '',
                 'match_type': 'none'
             }
-        
+
+        # Check for exact match first
+        exact_match = self.keyword_to_category.get(product_name.lower())
+        if exact_match:
+            return {
+                'category': exact_match,
+                'confidence': 1.0,
+                'matched_word': product_name,
+                'match_type': 'exact_full_match'
+            }
+
         # Descriptive words to ignore when classifying
         descriptive_words = {
             'smooth', 'creamy', 'fresh', 'low', 'fat', 'high', 'light', 
             'original', 'classic', 'new', 'traditional', 'premium', 
-            'best', 'natural', 'strawberry', 'chocolate', 'vanilla', 
-            'blueberry', 'raspberry', 'caramel', 'apple', 'lemon'
+            'best', 'natural'
         }
-        
+
+        # Whitelist for specific combinations
+        whitelist = {
+            'dark chocolate', 'fresh strawberry', 'organic apple', 
+            'sugar-free vanilla', 'low-fat yogurt'
+        }
+
         # Find the most specific non-descriptive word
-        specific_words = [word for word in words if word not in descriptive_words]
-        
+        specific_words = []
+        for word in words:
+            if word not in descriptive_words or product_name.lower() in whitelist:
+                specific_words.append(word)
+
         # If all specific words are filtered out, use the last original word
         if not specific_words:
             specific_words = [words[-1]]
