@@ -32,12 +32,9 @@
               subGroup.products.length > 1 ? 'border-2 border-blue-200 p-4 bg-blue-50/20' : ''
             ]"
           >
-            <!-- Only show subgroup header if there are multiple products -->
-            <h4 v-if="subGroup.products.length > 1" class="font-semibold text-lg text-gray-700">
-              {{ subGroup.label }}
-              <span class="text-sm font-normal text-gray-500 ml-2">
-                ({{ subGroup.products.length }} matching items)
-              </span>
+            <!-- Subgroup Header -->
+            <h4 v-if="subGroup.products.length > 0" class="font-semibold text-lg text-gray-700">
+              {{ subGroup.label }} ({{ subGroup.products.length }} matching items)
             </h4>
             
             <div
@@ -50,16 +47,16 @@
                 <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
                   <div class="flex items-center gap-2">
                     <p class="text-sm text-gray-600">Price: ${{ product.current_price }}</p>
-              <span
-  v-if="subGroup.products.length > 1 && productIndex > 0 && getPriceDifference(product, subGroup.products[0]) !== 0"
-  :class="{
-    'px-2 py-1 text-xs font-medium rounded-full': true,
-    'bg-red-100 text-red-800': getPriceDifference(product, subGroup.products[0]) > 0,
-    'bg-green-100 text-green-800': getPriceDifference(product, subGroup.products[0]) < 0
-  }"
->
-  {{ formatPriceDifference(getPriceDifference(product, subGroup.products[0])) }}
-</span>
+                    <span
+                      v-if="subGroup.products.length > 1 && productIndex > 0 && getPriceDifference(product, subGroup.products[0]) !== 0"
+                      :class="{
+                        'px-2 py-1 text-xs font-medium rounded-full': true,
+                        'bg-red-100 text-red-800': getPriceDifference(product, subGroup.products[0]) > 0,
+                        'bg-green-100 text-green-800': getPriceDifference(product, subGroup.products[0]) < 0
+                      }"
+                    >
+                      {{ formatPriceDifference(getPriceDifference(product, subGroup.products[0])) }}
+                    </span>
                   </div>
                   <p class="text-sm text-gray-500">Source: {{ product.source_site }}</p>
                   <p class="text-sm text-gray-500">Category: {{ formatCategoryName(product.category) }}</p>
@@ -134,74 +131,19 @@ const normalizeText = (text) => {
     .toLowerCase()
     .replace(/['']/g, '') // Remove apostrophes
     .replace(/[^a-z0-9 ]/g, '') // Remove special characters
-    .replace(/\s+/g, ' ')       // Normalize spaces
-    .replace(/n fruity/g, 'n fruity') // Handle specific brand cases
-    .replace(/mixed berry|berry favourites/g, 'berry') // Normalize common flavor variations
-    .replace(/pack|pk/g, '') // Normalize package indicators
+    .replace(/\s+/g, ' ') // Normalize spaces
     .trim();
 };
 
-// Normalize size values
-const normalizeSize = (size) => {
-  if (!size) return '';
-  
-  // Extract numbers and units
-  const numbers = size.match(/\d+(\.\d+)?/g) || [];
-  const normalized = size.toLowerCase()
-    .replace(/[^0-9a-z.]/g, ' ')  // Replace special chars with space
-    .replace(/(\d)([a-z])/g, '$1 $2') // Add space between number and unit
-    .replace(/pottles/g, '') // Remove "pottles" word
-    .trim();
-  
-  // Handle "X x Y" format (e.g., "6 x 125g" -> "750g")
-  if (numbers.length === 2 && normalized.includes('x')) {
-    const total = numbers[0] * numbers[1];
-    return `${total}${normalized.split(' ').pop()}`; // Use the last unit
-  }
-  
-  // Handle "125g pottles 750g" format - use the total weight
-  if (numbers.length === 2) {
-    return `${Math.max(...numbers.map(Number))}${normalized.split(' ').pop()}`;
-  }
-  
-  return normalized
-    .replace(/kgs?|kilos?/, 'kg')
-    .replace(/grm?s?|grams?/, 'g')
-    .replace(/mls?|millilitres?/, 'ml')
-    .replace(/ltrs?|liters?/, 'l');
+// Function to capitalize the first letter of each word
+const capitalizeWords = (text) => {
+  return text.replace(/\b\w/g, char => char.toUpperCase());
 };
 
-// Extract key product features for comparison
-const getProductFeatures = (productName) => {
-  const normalized = normalizeText(productName);
-  const words = normalized.split(' ');
-  
-  // Extract brand name (usually first 2-3 words)
-  const brand = words.slice(0, Math.min(3, words.length)).join(' ');
-  
-  // Extract product type and flavor
-  const type = words.find(w => w.includes('yoghurt')) || '';
-  const flavor = words.find(w => ['berry', 'chocolate', 'vanilla', 'strawberry'].includes(w)) || '';
-  
-  return { brand, type, flavor };
-};
-
-const calculateSimilarity = (str1, str2) => {
-  const features1 = getProductFeatures(str1);
-  const features2 = getProductFeatures(str2);
-  
-  let score = 0;
-  
-  // Compare brand names (higher weight)
-  if (features1.brand === features2.brand) score += 0.5;
-  
-  // Compare product type
-  if (features1.type === features2.type) score += 0.3;
-  
-  // Compare flavor
-  if (features1.flavor === features2.flavor) score += 0.2;
-  
-  return score;
+// Function to format category names for display
+const formatCategoryName = (category) => {
+  if (!category) return '';
+  return capitalizeWords(category.replace(/-/g, ' '));
 };
 
 // Calculate price difference between two products
@@ -215,45 +157,96 @@ const formatPriceDifference = (difference) => {
   return `${prefix}$${difference.toFixed(2)}`;
 };
 
-const areProductsSimilar = (product1, product2) => {
-  // Must be in same category
-  if (product1.category !== product2.category) return false;
-  
-  // Compare normalized sizes
-  const normalizedSize1 = normalizeSize(product1.size);
-  const normalizedSize2 = normalizeSize(product2.size);
-  
-  // Extract numbers from sizes for numerical comparison
-  const size1Number = parseFloat(normalizedSize1.match(/\d+(\.\d+)?/)?.[0] || '0');
-  const size2Number = parseFloat(normalizedSize2.match(/\d+(\.\d+)?/)?.[0] || '0');
-  
-  // Allow for small variations in size (within 5%)
-  const sizesMatch = Math.abs(size1Number - size2Number) / Math.max(size1Number, size2Number) < 0.05;
-  
-  if (!sizesMatch) return false;
-  
-  // Calculate name similarity
-  const similarityScore = calculateSimilarity(product1.productname, product2.productname);
-  const SIMILARITY_THRESHOLD = 0.7;
+// Function to find the most appropriate matched string from product names
+const getMatchedString = (products) => {
+  if (!products.length) return '';
 
-  // Additional check for specific product names
-  const specialCaseMatch = (product1.productname.includes("Beehive") && product2.productname.includes("Beehive")) &&
-                           (product1.productname.includes("Bacon") && product2.productname.includes("Bacon"));
-  
-  return similarityScore >= SIMILARITY_THRESHOLD || specialCaseMatch;
+  // Filter by category and size
+  const category = products[0].category;
+  const size = products[0].size;
+
+  // Extract the product names that have the same category and size
+  const validProducts = products.filter(p => p.category === category && p.size === size);
+
+  // If no valid products, return a default label
+  if (!validProducts.length) return 'No matching products';
+
+  // Create a frequency map of words from valid product names
+  const wordCount = {};
+  validProducts.forEach(product => {
+    const words = normalizeText(product.productname).split(" ");
+    words.forEach(word => {
+      wordCount[word] = (wordCount[word] || 0) + 1;
+    });
+  });
+
+  // Determine significant words (greater occurrences)
+  const significantWords = Object.keys(wordCount).filter(word => wordCount[word] > 1 || validProducts.length < 3);
+
+  // Create a matched string based on significant words
+  return significantWords.length > 0 ? capitalizeWords(significantWords.join(" ")) : validProducts[0].productname;
 };
 
-const findGroupLabel = (products) => {
-  return products
-    .map(p => p.productname)
-    .reduce((shortest, current) => 
-      current.length < shortest.length ? current : shortest
-    );
+// Function to check if two products are similar based on name and size
+const areProductsSimilar = (product1, product2) => {
+  const normalizedName1 = normalizeText(product1.productname);
+  const normalizedName2 = normalizeText(product2.productname);
+  const normalizedSize1 = normalizeSize(product1.size);
+  const normalizedSize2 = normalizeSize(product2.size);
+
+  // Check if sizes and categories are the same
+  const sizesMatch = normalizedSize1 === normalizedSize2;
+  const categoriesMatch = product1.category === product2.category;
+
+  // Use Levenshtein distance for name similarity
+  const distance = getLevenshteinDistance(normalizedName1, normalizedName2);
+  const maxLength = Math.max(normalizedName1.length, normalizedName2.length);
+  const similarityThreshold = 0.4; // Adjust threshold as needed
+
+  const namesMatch = (1 - distance / maxLength) > similarityThreshold;
+
+  return sizesMatch && categoriesMatch && namesMatch;
+};
+
+// Normalize size values for comparison
+const normalizeSize = (size) => {
+  if (!size) return '';
+  return size.toLowerCase().trim();
+};
+
+// Levenshtein distance algorithm for name similarity
+const getLevenshteinDistance = (a, b) => {
+  const matrix = [];
+
+  for (let i = 0; i <= b.length; i++) {
+    matrix[i] = [i];
+  }
+
+  for (let j = 0; j <= a.length; j++) {
+    matrix[0][j] = j;
+  }
+
+  for (let i = 1; i <= b.length; i++) {
+    for (let j = 1; j <= a.length; j++) {
+      if (b.charAt(i - 1) === a.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1, // substitution
+          Math.min(matrix[i][j - 1] + 1, // insertion
+                     matrix[i - 1][j] + 1) // deletion
+        );
+      }
+    }
+  }
+
+  return matrix[b.length][a.length];
 };
 
 const sortedGroupedProducts = computed(() => {
   const groups = {};
 
+  // Group products by category
   props.paginatedProducts.forEach(product => {
     if (!product?.productname || !product.category) return;
 
@@ -264,31 +257,46 @@ const sortedGroupedProducts = computed(() => {
       };
     }
 
+    // Check for similarity based on product name, size, and category
     let foundGroup = groups[product.category].subGroups.find(subGroup =>
       subGroup.products.some(p => areProductsSimilar(p, product))
     );
 
     if (foundGroup) {
       foundGroup.products.push({ ...product, quantity: product.quantity || 1 });
-      foundGroup.label = findGroupLabel(foundGroup.products);
+      // Update label to the matched string
+      foundGroup.label = getMatchedString(foundGroup.products); // Set the label to the matched string
     } else {
+      // Set the label to the matched product name for labeling
+      const matchedName = getMatchedString([{ ...product }]); // Use the product name for labeling
       groups[product.category].subGroups.push({
-        label: product.productname,
+        label: matchedName,  // Set the subgroup label to the matched product name
         products: [{ ...product, quantity: product.quantity || 1 }]
       });
     }
   });
 
-  // Sort groups and products
-  return Object.values(groups).map(group => ({
+  // Sort subgroups based on the selected sort option
+  const sortedGroups = Object.values(groups).map(group => ({
     ...group,
-    subGroups: group.subGroups
-      .sort((a, b) => a.label.localeCompare(b.label))
-      .map(subGroup => ({
-        ...subGroup,
-        products: subGroup.products.sort((a, b) => a.current_price - b.current_price)
-      }))
-  })).sort((a, b) => a.category.localeCompare(b.category));
+    subGroups: group.subGroups.sort((a, b) => {
+      if (props.sortOption === 'name') {
+        return a.label.localeCompare(b.label);
+      } else if (props.sortOption === 'price') {
+        // Sort products within each subgroup by price
+        a.products.sort((x, y) => x.current_price - y.current_price);
+        return 0; // Maintain order after sorting products
+      }
+      return 0; // Default case
+    })
+  })).sort((a, b) => {
+    if (props.sortOption === 'category') {
+      return a.category.localeCompare(b.category);
+    }
+    return 0; // Maintain group order for other sort options
+  });
+
+  return sortedGroups;
 });
 
 const notCategorizedProducts = computed(() => {
@@ -300,10 +308,8 @@ const handleAddToList = (product) => {
   emit('addToList', { ...product, quantity });
 };
 
-const formatCategoryName = (category) => {
-  if (!category) return '';
-  return category
-    .replace(/-/g, ' ')
-    .replace(/\b\w/g, char => char.toUpperCase());
-};
 </script>
+
+<style scoped>
+/* Add any additional styles for your component here */
+</style>

@@ -4,12 +4,12 @@
       v-model="localSearchQuery"
       type="text"
       placeholder="Search for products..."
-      class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+      class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
     />
     
     <select
       v-model="localSelectedCategory"
-      class="w-full sm:w-auto p-2 border border-gray-300 rounded-lg"
+      class="w-full sm:w-auto p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
     >
       <option value="">All Categories</option>
       <option v-for="category in sortedFormattedCategories" :key="category.value" :value="category.value">
@@ -17,45 +17,86 @@
       </option>
     </select>
 
+    <div class="flex items-center">
+      <label for="sort" class="mr-2 text-sm">Sort By:</label>
+      <select v-model="localSortOption" id="sort" class="p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200">
+        <option value="name">Name</option>
+        <option value="price">Price</option>
+        <option value="category">Category</option>
+      </select>
+    </div>
+
     <button
       @click="handleSearch"
-      class="w-full sm:w-auto py-2 px-6 bg-black text-white rounded-lg font-semibold text-lg hover:bg-gray-800 transition-colors duration-200"
+      class="w-full sm:w-auto py-3 px-6 bg-black text-white rounded-lg font-semibold text-lg hover:bg-gray-800 transition duration-200"
     >
       Search
     </button>
 
     <button
       @click="clearSearch"
-      class="w-full sm:w-auto py-2 px-6 bg-gray-300 text-black rounded-lg font-semibold text-lg hover:bg-gray-400 transition-colors duration-200"
+      class="w-full sm:w-auto py-3 px-6 bg-gray-300 text-black rounded-lg font-semibold text-lg hover:bg-gray-400 transition duration-200"
     >
       Clear Search
     </button>
   </div>
 </template>
 
+
 <script setup>
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed } from 'vue';
 
-const props = defineProps(['searchQuery', 'selectedCategory', 'categories'])
-const emit = defineEmits(['update:searchQuery', 'update:selectedCategory', 'search'])
+// Define props and emits
+const props = defineProps({
+  searchQuery: {
+    type: String,
+    default: ''
+  },
+  selectedCategory: {
+    type: String,
+    default: ''
+  },
+  categories: {
+    type: Array,
+    default: () => []
+  },
+  sortOption: {
+    type: String,
+    default: 'category'
+  }
+});
 
-const localSearchQuery = ref(props.searchQuery || '');
-const localSelectedCategory = ref(props.selectedCategory || '');
+const emit = defineEmits([
+  'update:searchQuery',
+  'update:selectedCategory',
+  'search',
+  'update:sortOption'
+]);
+
+const localSearchQuery = ref(props.searchQuery);
+const localSelectedCategory = ref(props.selectedCategory);
+const localSortOption = ref(props.sortOption);
+
+// Watch for changes in localSortOption and emit updates
+watch(localSortOption, (newVal) => {
+  emit('update:sortOption', newVal);
+});
 
 // Watch for changes in localSearchQuery and emit updates
 watch(localSearchQuery, (newVal) => {
-  emit('update:searchQuery', newVal)
-})
+  emit('update:searchQuery', newVal);
+});
 
 // Watch for changes in localSelectedCategory and emit updates
 watch(localSelectedCategory, (newVal) => {
-  emit('update:selectedCategory', newVal)
-})
+  emit('update:selectedCategory', newVal);
+});
 
 // Emit search event with search query and selected category
 const handleSearch = () => {
   const normalizedQuery = normalizeSearchQuery(localSearchQuery.value);
 
+  // Assuming 'products' is available in your context, you might need to pass it down as a prop
   const filteredProducts = products.filter(product => {
     return (
       normalizedQuery.every(queryWord =>
@@ -67,7 +108,6 @@ const handleSearch = () => {
 
   emit('search', filteredProducts);
 };
-
 
 // Clear search functionality
 const clearSearch = () => {
@@ -107,5 +147,8 @@ const normalizeSearchQuery = (query) => {
     .map(word => word.replace(/['’]/g, '')) // Remove apostrophes
     .filter(word => word.length > 0); // Remove empty strings
 };
-
 </script>
+
+<style scoped>
+/* Add any additional styles for your component here */
+</style>

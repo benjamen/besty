@@ -3,6 +3,7 @@
 import frappe
 from frappe import _
 import json
+from datetime import datetime, date
 from collections import Counter
 from sentence_transformers import SentenceTransformer, util
 from difflib import get_close_matches
@@ -12,8 +13,7 @@ class ProductClassifier:
         self.model = SentenceTransformer(model_name)
         self.threshold = threshold
         self.ignore_words = {'pams', 'brushed', 'mix', 'bag', 'wash', 'woolworths', 'fresh', 'bagged', 'value', 'kg', 'g', 'ml', 'l', 'pack', 'pk', 'ea','prepacked'}
-        
-        
+           
         self.product_type_keywords = {
             # Dairy & Eggs
             'Dairy & Eggs': [
@@ -232,7 +232,7 @@ class ProductClassifier:
                 'puree', 'fruit puree', 'vegetable puree', 'snack', 
                 'baby snack', 'teething biscuits', 'puffs', 'cereal', 
                 'baby cereal', 'rice cereal', 'oatmeal cereal', 'juice', 
-                'baby juice', 'apple juice', 'pear juice', 'milk', 
+                'baby juice', 'apple juice', 'pear juice', 'baby milk', 'milk powder',
                 'toddler milk', 'baby yogurt', 'baby pudding'
             ],
 
@@ -281,7 +281,7 @@ class ProductClassifier:
                 'shampoo', 'anti-dandruff shampoo', 'volumizing shampoo', 
                 'conditioner', 'deep conditioner', 'leave-in conditioner', 
                 'soap', 'bar soap', 'liquid soap', 'wash', 'body wash', 
-                'face wash', 'lotion', 'body lotion', 'hand lotion', 'cream', 
+                'face wash', 'lotion', 'body lotion', 'hand lotion', 
                 'moisturizing cream', 'anti-aging cream', 'deodorant', 'stick deodorant', 
                 'spray deodorant', 'toothpaste', 'whitening toothpaste', 
                 'sensitive toothpaste', 'mouthwash', 'antibacterial mouthwash', 
@@ -306,10 +306,8 @@ class ProductClassifier:
         }
 
 
-            # Dairy & Eggs
-            # Add your product categories and keywords here
 
-        
+
         # Create reverse mapping with plural forms and embeddings for keywords
         self.keyword_to_category = {}
         self.keyword_embeddings = {}
@@ -344,6 +342,71 @@ class ProductClassifier:
         
         return words[-1]
 
+    def get_all_words(self, product_name):
+        """Extract all relevant words from the product name."""
+        name = product_name.split('(')[0].strip()
+        name = name.replace('-', ' ')
+        words = name.lower().split()
+        return [w for w in words if w not in self.ignore_words and not any(c.isdigit() for c in w)]
+
+    def classify_single_product(self, product_name):
+        """
+        Enhanced method to handle multi-word product names
+        """
+        words = self.get_all_words(product_name)
+        
+        if not words:
+            return {
+                'category': 'Unknown',
+                'confidence': 0.0,
+                'matched_word': '',
+                'match_type': 'none'
+            }
+        
+        # Descriptive words to ignore when classifying
+        descriptive_words = {
+            'smooth', 'creamy', 'fresh', 'low', 'fat', 'high', 'light', 
+            'original', 'classic', 'new', 'traditional', 'premium', 
+            'best', 'natural', 'strawberry', 'chocolate', 'vanilla', 
+            'blueberry', 'raspberry', 'caramel', 'apple', 'lemon'
+        }
+        
+        # Find the most specific non-descriptive word
+        specific_words = [word for word in words if word not in descriptive_words]
+        
+        # If all specific words are filtered out, use the last original word
+        if not specific_words:
+            specific_words = [words[-1]]
+        
+        # Try classification for specific words
+        for word in reversed(specific_words):
+            category = self.keyword_to_category.get(word)
+            if category:
+                return {
+                    'category': category,
+                    'confidence': 1.0,
+                    'matched_word': word,
+                    'match_type': 'exact_specific_word'
+                }
+        
+        # Semantic matching fallback
+        for word in reversed(specific_words):
+            last_word_result = self.find_category(word)
+            if last_word_result[0]:
+                return {
+                    'category': last_word_result[0],
+                    'confidence': 0.7,
+                    'matched_word': last_word_result[1],
+                    'match_type': 'last_specific_word'
+                }
+        
+        return {
+            'category': 'Unknown',
+            'confidence': 0.0,
+            'matched_word': '',
+            'match_type': 'none'
+        }
+
     def find_category(self, word):
         """Try to find category for a word using multiple methods."""
         # Method 1: Direct lookup including plural forms
@@ -376,88 +439,6 @@ class ProductClassifier:
 
         return None, word, 0.0, 'none'
 
-    def get_all_words(self, product_name):
-        """Extract all relevant words from the product name."""
-        name = product_name.split('(')[0].strip()
-        name = name.replace('-', ' ')
-        words = name.lower().split()
-        return [w for w in words if w not in self.ignore_words and not any(c.isdigit() for c in w)]
-
-    def classify_single_product(self, product_name):
-
-        words = self.get_all_words(product_name)
-        
-        if not words:
-            return {
-                'category': 'Unknown',
-                'confidence': 0.0,
-                'matched_word': '',
-                'match_type': 'none'
-            }
-        
-        # 1. Try exact match with last word
-        last_word = words[-1]
-        category = self.keyword_to_category.get(last_word)
-        if category:
-            return {
-                'category': category,
-                'confidence': 1.0,
-                'matched_word': last_word,
-                'match_type': 'exact_last_word'
-            }
-        
-        # 2. Try exact matches with other words (from right to left)
-        for word in reversed(words[:-1]):  # Exclude last word as it was already checked
-            category = self.keyword_to_category.get(word)
-            if category:
-                return {
-                    'category': category,
-                    'confidence': 1.0,
-                    'matched_word': word,
-                    'match_type': 'exact_other_word'
-                }
-        
-        # 3. Only if no exact matches found, try fuzzy matching
-        # Try last word first for fuzzy matching
-        all_keywords = list(self.keyword_embeddings.keys())
-        close_matches = get_close_matches(last_word, all_keywords, n=1, cutoff=0.8)
-        if close_matches:
-            matched_word = close_matches[0]
-            return {
-                'category': self.keyword_to_category[matched_word],
-                'confidence': 0.9,
-                'matched_word': matched_word,
-                'match_type': 'fuzzy'
-            }
-        
-        # 4. Finally, try semantic matching as last resort
-        if last_word:
-            word_embedding = self.model.encode(last_word, convert_to_tensor=True)
-            best_score = 0
-            best_match = None
-            
-            for keyword, keyword_embedding in self.keyword_embeddings.items():
-                similarity = util.cos_sim(word_embedding, keyword_embedding).item()
-                if similarity > best_score:
-                    best_score = similarity
-                    best_match = keyword
-
-            if best_score > self.threshold:
-                return {
-                    'category': self.keyword_to_category[best_match],
-                    'confidence': round(best_score, 3),
-                    'matched_word': best_match,
-                    'match_type': 'semantic'
-                }
-        
-        # If nothing found, return Unknown
-        return {
-            'category': 'Unknown',
-            'confidence': 0.0,
-            'matched_word': '',
-            'match_type': 'none'
-        }
-
 def setup_product_classifier():
     """Initialize the ProductClassifier as a global singleton"""
     if not hasattr(frappe.local, 'product_classifier'):
@@ -483,10 +464,14 @@ def classify_product(doc, method):
         if not classification:
             raise ValueError(f"Classification failed for product: {productname}")
         
-        matched_word_sentence_case = classification['matched_word'].capitalize()
+        # Clear existing categories before adding new ones
+        doc.product_categories = []
+        
+        # If classification is successful
+        if classification['category'] != 'Unknown':
+            matched_word_sentence_case = classification['matched_word'].capitalize()
 
-        # Update the item document with classification results
-        if classification['category'] != 'Unclassified':
+            # Add main category
             doc.db_set('category', matched_word_sentence_case)
             
             # Populate product_categories child table
@@ -494,28 +479,32 @@ def classify_product(doc, method):
                 {"doctype": "Product Category", "category_name": classification['category']},
                 {"doctype": "Product Category", "category_name": matched_word_sentence_case}
             ]
-            # Ensure product_categories is initialized as a list if not present
-            if not doc.get('product_categories'):
-                doc.product_categories = []
             
+            # Add categories to the document
             for category in product_categories:
                 doc.append('product_categories', category)
             
             frappe.db.commit()
             
             frappe.msgprint(_(f"Product classified as: {classification['category']} "
-                            f"(Confidence: {classification['confidence']})"))
+                            f"(Confidence: {classification['confidence']}, "
+                            f"Matched Word: {classification['matched_word']})"))
         else:
             frappe.msgprint(_("Could not classify product automatically"))
             
     except Exception as e:
-        # Enhanced error logging
+        # Enhanced error logging with safe JSON serialization
         error_message = f"Product Classification Error: {str(e)}\n"
-        error_message += f"Document: {json.dumps(doc.as_dict(), indent=2)}\n"
+        try:
+            # Convert doc to a dict, removing non-serializable objects
+            doc_dict = {k: v for k, v in doc.as_dict().items() if not isinstance(v, (datetime, date))}
+            error_message += f"Document: {json.dumps(doc_dict, indent=2)}\n"
+        except Exception as serialization_error:
+            error_message += f"Document serialization failed: {str(serialization_error)}\n"
+        
         error_message += f"Method: {method}\n"
         frappe.log_error(error_message, "Product Classification")
         frappe.msgprint(_("Error during product classification. Check error logs."))
-
 
 def classify_all_products():
     """
@@ -546,5 +535,3 @@ def classify_all_products():
             error_message = f"Error classifying product {item.name}: {str(e)}"
             frappe.log_error(error_message, "Classify All Products Error")
             frappe.msgprint(_(f"Error classifying product {item.name}. Check error logs."))
-
-

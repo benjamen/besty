@@ -32,13 +32,14 @@
         <!-- Search Bar -->
         <div class="flex flex-col sm:flex-row justify-between items-center mb-4">
           <SearchBar
-            v-model:searchQuery="searchQuery"
-            v-model:selectedCategory="selectedCategory"
-            :categories="categories"
-            @search="performSearch"
-            class="flex-1"
-            v-model:sortOption="sortOption"
-          />
+              v-model:searchQuery="searchQuery"
+              v-model:selectedCategory="selectedCategory"
+              :categories="categories"
+              @search="performSearch"
+              class="flex-1"
+              v-model:sortOption="sortOption"
+              @update:sortOption="sortOption = $event"
+            />
         </div>
 
         <!-- Product List -->
@@ -82,7 +83,7 @@ const currentPage = ref(0);
 const isLoading = ref(true);
 const showShoppingList = ref(true);
 const pageSize = 10;
-const sortOption = ref('category');
+const sortOption = ref('price');
 
 // Product resource
 const products = createListResource({
