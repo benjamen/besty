@@ -41,25 +41,13 @@
 
           <div v-else>
             <div v-for="(subGroup, subIndex) in group.subGroups" :key="subIndex" class="mb-8">
-              <h4 class="font-semibold text-lg text-gray-700 mb-4">{{ subGroup.label }} ({{ subGroup.products.length }} matching items)</h4>
+              <h4 class="font-semibold text-lg text-gray-700 mb-4">{{ subGroup.label }}</h4>
               <div v-for="(product, productIndex) in subGroup.products" :key="product.productname + product.source_site" class="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-white rounded-lg border border-gray-100">
                 <img :src="product.image_url" alt="Product Image" class="w-24 h-24 object-cover mr-4" />
                 <div class="flex-1 mb-3 sm:mb-0">
                   <strong class="text-lg block sm:inline">{{ product.productname }}</strong>
                   <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
-                    <div class="flex items-center gap-2">
-                      <p class="text-sm text-gray-600">Price: ${{ product.current_price }}</p>
-                      <span
-                        v-if="subGroup.products.length > 1 && productIndex > 0 && getPriceDifference(product, subGroup.products[0]) !== 0"
-                        :class="{
-                          'px-2 py-1 text-xs font-medium rounded-full': true,
-                          'bg-red-100 text-red-800': getPriceDifference(product, subGroup.products[0]) > 0,
-                          'bg-green-100 text-green-800': getPriceDifference(product, subGroup.products[0]) < 0
-                        }"
-                      >
-                        {{ formatPriceDifference(getPriceDifference(product, subGroup.products[0])) }}
-                      </span>
-                    </div>
+                    <p class="text-sm text-gray-600">Price: ${{ product.current_price }}</p>
                     <p class="text-sm text-gray-500">Source: {{ product.source_site }}</p>
                     <p class="text-sm text-gray-500">Category: {{ formatCategoryName(product.category) }}</p>
                     <p v-if="product.size" class="text-sm text-gray-500">Size: {{ product.size }}</p>
@@ -160,69 +148,48 @@ const formatPriceDifference = (difference) => {
   return `${prefix}$${difference.toFixed(2)}`;
 };
 
-// Function to find the most appropriate matched string from product names
+// Function to find the exact matched strings from product names
 const getMatchedString = (products) => {
   if (!products.length) return '';
 
-  // Extract product names
-  const productNames = products.map(product => normalizeText(product.productname));
+  // Normalize product names for comparison
+  const normalizedNames = products.map(product => normalizeText(product.productname));
 
-  // Create a list of unique variations (e.g., "Strawberry Flavour Milk", "Chocolate Flavour Milk")
-  const variations = new Set();
-  productNames.forEach(name => {
-    const words = name.split(" ").slice(1).join(" "); // Exclude the first word (brand)
-    variations.add(words);
-  });
+  // Find common parts in the product names
+  const commonParts = normalizedNames.reduce((acc, name) => {
+    const parts = name.split(" ");
+    if (acc.length === 0) return parts; // Initialize with the first product's parts
+    return acc.filter(part => parts.includes(part)); // Keep only common parts
+  }, []);
 
-  // Create a variations string
-  const variationsString = Array.from(variations).join(", ");
-
-  // Return the matched string
-  return `${variationsString}`;
+  // Create the matched string from common parts
+  const matchedString = commonParts.join(" ");
+  
+  // Return the matched string with count of matching items
+  return `${matchedString} (${products.length} matching items)`;
 };
 
 // Function to check if two products are similar based on name and size
 const areProductsSimilar = (product1, product2) => {
+  // Check if sizes are the same
+  const sizeMatch = product1.size === product2.size;
+
+  // If sizes don't match, return false
+  if (!sizeMatch) return false;
+
+  // Normalize names for comparison
   const normalizedName1 = normalizeText(product1.productname);
   const normalizedName2 = normalizeText(product2.productname);
 
-  // Use Levenshtein distance for name similarity
-  const distance = getLevenshteinDistance(normalizedName1, normalizedName2);
-  const maxLength = Math.max(normalizedName1.length, normalizedName2.length);
-  const similarityThreshold = 0.4; // Adjust threshold as needed
+  // Check for common words in the names
+  const keywords1 = normalizedName1.split(" ");
+  const keywords2 = normalizedName2.split(" ");
 
-  const namesMatch = (1 - distance / maxLength) > similarityThreshold;
+  // Check if any keyword in the first product's name exists in the second product's name
+  const commonKeywords = keywords1.filter(keyword => keywords2.includes(keyword));
 
-  return namesMatch;
-};
-
-// Levenshtein distance algorithm for name similarity
-const getLevenshteinDistance = (a, b) => {
-  const matrix = [];
-
-  for (let i = 0; i <= b.length; i++) {
-    matrix[i] = [i];
-  }
-
-  for (let j = 0; j <= a.length; j++) {
-    matrix[0][j] = j;
-  }
-
-  for (let i = 1; i <= b.length; i++) {
-    for (let j = 1; j <= a.length; j++) {
-      if (b.charAt(i - 1) === a.charAt(j - 1)) {
-        matrix[i][j] = matrix[i - 1][j - 1];
-      } else {
-        matrix[i][j] = Math.min(
-          matrix[i - 1][j - 1] + 1, // substitution
-          Math.min(matrix[i][j - 1] + 1, // insertion
-                     matrix[i - 1][j] + 1) // deletion
-        );
-      }
-    }
-  }
-
-  return matrix[b.length][a.length];
+  // Allow matching if there are common keywords
+  return commonKeywords.length > 0;
 };
 
 const sortedGroupedProducts = computed(() => {
