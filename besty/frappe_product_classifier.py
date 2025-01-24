@@ -17,7 +17,7 @@ class ProductClassifier:
         self.product_type_keywords = {
             # Dairy & Eggs
             'Dairy & Eggs': [
-                'milk', 'flavour milk', 'calci-yum milk', 'whole milk', 'skim milk', 'low-fat milk', 'butter', 
+                'milk', 'flavour milk', 'calci flavour milk', 'whole milk', 'skim milk', 'low-fat milk', 'butter', 
                 'unsalted butter', 'salted butter', 'cheese', 'cheddar', 'mozzarella', 
                 'parmesan', 'gouda', 'feta', 'brie', 'camembert', 'blue cheese', 
                 'cream cheese', 'goat cheese', 'ricotta', 'yogurt', 'Greek yogurt', 
