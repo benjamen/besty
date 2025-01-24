@@ -33,7 +33,7 @@ class ProductClassifier:
                 'oat milk', 'coconut milk', 'cashew milk', 'milk powder', 
                 'clarified butter', 'probiotic drinks', 'quark', 'clotted cream',
                 'soy milk','almond milk','coconut milk','lactose free milk','buttermilk',
-                'uht milk','cream cheese','soy milk','almond milk','coconut milk',
+                'uht milk','cream cheese','soy milk','almond milk','coconut milk','yoghurt suckies'
             ],
 
             # Bread & Bakery
@@ -136,7 +136,7 @@ class ProductClassifier:
                 'candy', 'hard candy', 'chewy candy', 'lollies', 'sweets', 
                 'gum', 'mints', 'bar', 'granola bar', 'energy bar', 
                 'snack', 'pretzel', 'soft pretzel', 'nachos', 'dip', 
-                'guacamole', 'salsa', 'hummus', 'trail mix', 'granola', 
+                'guacamole', 'salsa', 'hummus','hummmus', 'trail mix', 'granola', 
                 'fruit snacks', 'marshmallows', 'toffee', 'fudge', 'licorice',
                 'biersticks'
             ],
@@ -312,7 +312,18 @@ class ProductClassifier:
         }
 
 
-
+        self.keyword_to_category = {
+            'milk': 'Milk',
+            'flavour milk': 'Flavored Milk',
+            'whole milk': 'Whole Milk',
+            'skim milk': 'Skim Milk',
+            'low-fat milk': 'Low-Fat Milk',
+            'butter': 'Butter',
+            'cheese': 'Cheese',
+            'yogurt': 'Yogurt',
+            'cream': 'Cream',
+            # Add more mappings as needed
+        }
 
         # Create reverse mapping with plural forms and embeddings for keywords
         self.keyword_to_category = {}
@@ -357,7 +368,7 @@ class ProductClassifier:
 
     def classify_single_product(self, product_name):
         """
-        Enhanced method to handle multi-word product names
+        Enhanced method to handle multi-word product names with priority matches.
         """
         words = self.get_all_words(product_name)
         
@@ -378,6 +389,22 @@ class ProductClassifier:
                 'matched_word': product_name,
                 'match_type': 'exact_full_match'
             }
+
+        # Define a list of priority matches based on product_type_keywords
+        priority_matches = [
+            'flavour milk', 'whole milk', 'skim milk', 'low-fat milk', 
+            'butter', 'cheese', 'strawberry yogurt', 'cream', 'soy milk', 'almond milk','yoghurt suckies'
+        ]
+
+        # Check for priority matches first
+        for priority in priority_matches:
+            if priority in product_name.lower():
+                return {
+                    'category': 'Dairy & Eggs',  # Assuming all priority matches belong to this category
+                    'confidence': 1.0,
+                    'matched_word': priority,
+                    'match_type': 'priority_match'
+                }
 
         # Descriptive words to ignore when classifying
         descriptive_words = {
@@ -402,28 +429,28 @@ class ProductClassifier:
         if not specific_words:
             specific_words = [words[-1]]
         
-        # Check for specific matches first
-        for word in specific_words:
-            category = self.keyword_to_category.get(word)
-            if category:
-                return {
-                    'category': category,
-                    'confidence': 1.0,
-                    'matched_word': word,
-                    'match_type': 'exact_specific_word'
-                }
-        
+        # Check for specific matches in product_type_keywords
+        for category, keywords in self.product_type_keywords.items():
+            for keyword in keywords:
+                if keyword in specific_words:
+                    return {
+                        'category': category,
+                        'confidence': 1.0,
+                        'matched_word': keyword,
+                        'match_type': 'exact_specific_word'
+                    }
+            
         # Now check for multi-word phrases
         multi_word_matches = [' '.join(specific_words[i:i+2]) for i in range(len(specific_words)-1)]
         for multi_word in multi_word_matches:
-            category = self.keyword_to_category.get(multi_word)
-            if category:
-                return {
-                    'category': category,
-                    'confidence': 1.0,
-                    'matched_word': multi_word,
-                    'match_type': 'exact_multi_word_match'
-                }
+            for category, keywords in self.product_type_keywords.items():
+                if multi_word in keywords:
+                    return {
+                        'category': category,
+                        'confidence': 1.0,
+                        'matched_word': multi_word,
+                        'match_type': 'exact_multi_word_match'
+                    }
 
         # Fallback to semantic matching
         for word in reversed(specific_words):
@@ -442,6 +469,7 @@ class ProductClassifier:
             'matched_word': '',
             'match_type': 'none'
         }
+   
 
     def find_category(self, word):
         """Try to find category for a word using multiple methods."""
