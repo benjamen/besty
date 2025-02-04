@@ -1,4 +1,3 @@
-<!-- ShoppingList.vue-->
 <template>
   <div>
     <!-- New List Modal -->
@@ -65,11 +64,7 @@
       <h3 class="text-xl font-bold text-gray-900">{{ displayListName || 'Untitled List' }}</h3>
       
       <div v-if="groupedItems" class="space-y-6 mt-4">
-        <div 
-          v-for="(group, source) in groupedItems" 
-          :key="source" 
-          class="border-b border-gray-200 pb-4 last:border-0"
-        >
+        <div v-for="(group, source) in groupedItems" :key="source" class="border-b border-gray-200 pb-4 last:border-0">
           <div class="flex justify-between items-center mb-3 bg-gray-100 p-3 rounded-lg">
             <h4 class="text-lg font-semibold text-gray-800">{{ source }}</h4>
             <span class="text-lg font-bold text-gray-700">
@@ -78,11 +73,14 @@
           </div>
           
           <div class="space-y-2">
-            <div
-              v-for="item in group"
-              :key="item.productname"
-              class="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-gray-50 rounded-lg shadow-sm"
-            >
+            <div v-for="item in group" :key="item.productname" class="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-gray-50 rounded-lg shadow-sm">
+              <img 
+                :src="item.image_url || 'https://placehold.co/100x100/FFFFFF/FFFFFF.png'" 
+                alt="Product Image" 
+                class="w-16 h-16 object-cover rounded-lg"
+                @error="handleImageError"
+              />
+
               <div class="flex-1 mb-2 sm:mb-0">
                 <strong class="text-lg block sm:inline">{{ item.productname }}</strong>
                 <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
@@ -109,22 +107,17 @@
       </div>
 
       <div class="mt-4 flex justify-between">
-        <button 
-          @click="saveCurrentList"
-          class="py-2 px-4 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-200"
-        >
+        <button @click="saveCurrentList" class="py-2 px-4 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-200">
           Save List
         </button>
-        <button 
-          @click="$emit('export')"
-          class="py-2 px-4 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors duration-200"
-        >
+        <button @click="$emit('export')" class="py-2 px-4 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors duration-200">
           Export to XLS
         </button>
       </div>
     </div>
   </div>
 </template>
+
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
@@ -296,7 +289,8 @@ const handleListChange = async () => {
       }
 
       if (shoppingListResource.data && shoppingListResource.data.shopping_items) {
-        // First, fetch the complete product details for each item
+        console.log("Fetched Shopping Items:", shoppingListResource.data.shopping_items);
+
         const productDetails = await Promise.all(
           shoppingListResource.data.shopping_items.map(async (item) => {
             const productResource = createResource({
@@ -306,9 +300,10 @@ const handleListChange = async () => {
                 name: item.product,
               },
             });
-            
+
             try {
               await productResource.fetch();
+              console.log(`Fetched product ${item.product}:`, productResource.data);
               return productResource.data;
             } catch (error) {
               console.error(`Error fetching product details for ${item.product}:`, error);
@@ -317,18 +312,19 @@ const handleListChange = async () => {
           })
         );
 
-        // Transform items with complete product information
         const transformedItems = shoppingListResource.data.shopping_items.map((item, index) => {
           const productInfo = productDetails[index];
           return {
-            name: item.product, // The product ID
-            productname: productInfo ? productInfo.productname : item.productname, // Use fetched product name
+            name: item.product,
+            productname: productInfo ? productInfo.productname : item.productname,
             current_price: item.price,
             quantity: item.quantity,
             source_site: productInfo ? productInfo.source_site : item.source_site,
+            image_url: productInfo ? productInfo.image_url : null,  // Correct field
           };
         });
 
+        console.log("Transformed Items with Images:", transformedItems);
         emit('update:items', transformedItems);
       }
     } catch (error) {
@@ -336,6 +332,12 @@ const handleListChange = async () => {
     }
   }
 };
+
+const handleImageError = (event) => {
+  console.warn("Image failed to load:", event.target.src);
+  event.target.src = "https://placehold.co/100x100/FFFFFF/FFFFFF.png"; // Fallback image
+};
+
 
 // Watch for changes in items prop
 watch(() => props.items, async (newItems) => {
