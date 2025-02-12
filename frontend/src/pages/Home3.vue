@@ -82,32 +82,7 @@
         </div>
       </div>
 
-      <div class="bg-white rounded-lg shadow-sm p-4 sm:p-6">
-        <!-- Main Search Bar -->
-        <div class="flex flex-col sm:flex-row justify-between items-center mb-4">
-          <SearchBar
-            v-model:searchQuery="searchQuery"
-            @search="performSearch"
-            class="flex-1"
-          />
-        </div>
 
-        <!-- Product List -->
-        <ProductList
-          :paginatedProducts="paginatedProducts"
-          @addToList="addToList"
-        />
-
-        <!-- Pagination -->
-        <Pagination
-          :currentPage="currentPage"
-          :totalPages="totalPages"
-          :hasNextPage="hasNextPage"
-          :hasPrevPage="hasPrevPage"
-          @prevPage="prevPage"
-          @nextPage="nextPage"
-        />
-      </div>
     </div>
   </div>
 </template>
