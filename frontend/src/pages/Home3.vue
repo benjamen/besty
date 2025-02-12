@@ -117,10 +117,10 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { createListResource } from 'frappe-ui';
 import * as XLSX from 'xlsx';
 import fuzzysort from 'fuzzysort';
-import SearchBar from '../components/SearchBar.vue';
-import ProductList from '../components/ProductList.vue';
+import SearchBar from '../components/SearchBar2.vue';
+import ProductList from '../components/ProductList2.vue';
 import Pagination from '../components/Pagination.vue';
-import ShoppingList from '../components/ShoppingList.vue';
+import ShoppingList from '../components/ShoppingList2.vue';
 
 // State management
 const searchQuery = ref('');
