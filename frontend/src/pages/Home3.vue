@@ -113,7 +113,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { createListResource } from 'frappe-ui';
 import * as XLSX from 'xlsx';
 import fuzzysort from 'fuzzysort';
