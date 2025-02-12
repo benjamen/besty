@@ -218,7 +218,7 @@ const createList = async () => {
 
 const saveCurrentList = async () => {
   if (!currentListId.value) {
-    alert('Please select or create a list first');
+ //   alert('Please select or create a list first');
     return;
   }
 
@@ -244,7 +244,7 @@ const saveCurrentList = async () => {
     const response = await shoppingListResource.fetch();
 
     if (response && response.name) {
-      alert('Shopping list saved successfully!');
+//      alert('Shopping list saved successfully!');
     } else {
       console.error('Error saving shopping list:', response); // Log the full response
       alert('Failed to save shopping list. Please check the console for details.');
