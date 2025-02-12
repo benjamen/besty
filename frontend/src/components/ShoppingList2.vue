@@ -77,15 +77,14 @@
                  :key="item.productname" 
                  class="relative flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-gray-50 rounded-lg shadow-sm"
                  :class="{ 'opacity-60': item.inBasket }">
-              <div class="absolute top-2 right-2">
-                <button
-                  @click="removeItem(item)"
-                  class="text-gray-500 hover:text-red-500 transition-colors duration-200"
-                  title="Remove item"
-                >
-                  <span class="text-xl">×</span>
-                </button>
-              </div>
+              <!-- Improved remove button -->
+              <button
+                @click="removeItem(item)"
+                class="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-full bg-red-100 hover:bg-red-200 text-red-600 hover:text-red-700 transition-colors duration-200"
+                title="Remove item"
+              >
+                <span class="text-lg leading-none">&times;</span>
+              </button>
 
               <img 
                 :src="item.image_url || 'https://placehold.co/100x100/FFFFFF/FFFFFF.png'" 
@@ -100,7 +99,24 @@
                 </strong>
                 <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
                   <p class="text-sm text-gray-600">Price: ${{ item.current_price }}</p>
-                  <p class="text-sm text-gray-600">Quantity: {{ item.quantity }}</p>
+                  
+                  <!-- Quantity controls -->
+                  <div class="flex items-center space-x-2">
+                    <button 
+                      @click="decreaseQuantity(item)"
+                      class="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-gray-700 focus:outline-none"
+                    >
+                      <span class="text-lg">-</span>
+                    </button>
+                    <span class="text-sm text-gray-600 w-12 text-center">{{ item.quantity }}</span>
+                    <button 
+                      @click="increaseQuantity(item)"
+                      class="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-gray-700 focus:outline-none"
+                    >
+                      <span class="text-lg">+</span>
+                    </button>
+                  </div>
+                  
                   <p class="text-sm text-gray-600">Total: ${{ (item.current_price * item.quantity).toFixed(2) }}</p>
                 </div>
               </div>
@@ -192,9 +208,44 @@ const getGroupSubtotal = (group) => {
   }, 0);
 };
 
+// Quantity management functions
+const increaseQuantity = (item) => {
+  item.quantity++;
+  saveCurrentList();
+};
+
+const decreaseQuantity = (item) => {
+  if (item.quantity > 1) {
+    item.quantity--;
+    saveCurrentList();
+  } else {
+    removeItem(item);
+  }
+};
+
 // Toggle item in basket status
 const toggleItemInBasket = (item) => {
   item.inBasket = !item.inBasket;
+  saveCurrentList();
+};
+
+// Remove item from list
+const removeItem = (item) => {
+  emit('remove-item', item);
+};
+
+// Merge existing items function
+const mergeExistingItem = (newItem) => {
+  const existingItem = props.items.find(item => 
+    item.name === newItem.name && 
+    item.source_site === newItem.source_site
+  );
+  
+  if (existingItem) {
+    existingItem.quantity += newItem.quantity;
+    return true;
+  }
+  return false;
 };
 
 // Create a new shopping list
@@ -227,7 +278,6 @@ const createList = async () => {
       displayListName.value = newListName.value;
       showNewListModal.value = false;
       await shoppingLists.fetch();
-      emit('saveCurrentList');
     } else {
       console.error('Error creating shopping list, no name returned.');
       alert('Failed to create shopping list.');
@@ -276,12 +326,7 @@ const saveCurrentList = async () => {
   }
 };
 
-// Remove an item from the list
-const removeItem = (item) => {
-  emit('remove-item', item);
-};
-
-// Confirm the selection of a shopping list
+// Confirm list selection
 const confirmSelection = () => {
   if (currentListId.value) {
     showListSelectionModal.value = false;
@@ -290,7 +335,7 @@ const confirmSelection = () => {
   }
 };
 
-// Handle the change of the selected list
+// Handle list change
 const handleListChange = async () => {
   if (currentListId.value) {
     try {
@@ -329,19 +374,29 @@ const handleListChange = async () => {
           })
         );
 
-        const transformedItems = shoppingListResource.data.shopping_items.map((item, index) => {
+        // Group items by product and sum quantities
+        const itemMap = new Map();
+        shoppingListResource.data.shopping_items.forEach((item, index) => {
           const productInfo = productDetails[index];
-          return {
-            name: item.product,
-            productname: productInfo ? productInfo.productname : item.productname,
-            current_price: item.price,
-            quantity: item.quantity,
-            source_site: productInfo ? productInfo.source_site : item.source_site,
-            image_url: productInfo ? productInfo.image_url : null,
-            inBasket: item.inBasket || false,
-          };
+          const key = `${item.product}-${productInfo?.source_site}`;
+          
+          if (itemMap.has(key)) {
+            const existingItem = itemMap.get(key);
+            existingItem.quantity += item.quantity;
+          } else {
+            itemMap.set(key, {
+              name: item.product,
+              productname: productInfo ? productInfo.productname : item.productname,
+              current_price: item.price,
+              quantity: item.quantity,
+              source_site: productInfo ? productInfo.source_site : item.source_site,
+              image_url: productInfo ? productInfo.image_url : null,
+              inBasket: item.inBasket || false,
+            });
+          }
         });
 
+        const transformedItems = Array.from(itemMap.values());
         emit('update:items', transformedItems);
       }
     } catch (error) {
