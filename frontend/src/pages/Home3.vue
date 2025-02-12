@@ -120,7 +120,7 @@ import fuzzysort from 'fuzzysort';
 import SearchBar from '../components/SearchBar2.vue';
 import ProductList from '../components/ProductList2.vue';
 import Pagination from '../components/Pagination.vue';
-import ShoppingList from '../components/ShoppingList2.vue';
+import ShoppingList from '../components/ShoppingList.vue';
 
 // State management
 const searchQuery = ref('');
