@@ -46,42 +46,44 @@
           class="absolute top-16 left-0 right-0 bg-white rounded-lg shadow-lg border border-gray-200 z-10 max-h-96 overflow-y-auto"
         >
           <div class="p-4 space-y-4">
-            <div 
+                        <div 
               v-for="product in sortedSearchResults" 
               :key="product.name"
-              class="flex items-start p-4 hover:bg-gray-50 rounded-lg border border-gray-100 h-24"
+              class="flex items-center justify-between p-4 hover:bg-gray-50 rounded-lg border border-gray-100"
               :class="{
                 'bg-blue-50 border-blue-200': product.isClosestMatch,
                 'bg-green-50 border-green-200': product.isCheapest
               }"
             >
-              <img :src="product.image_url" alt="Product Image" class="w-16 h-16 object-cover rounded mr-4" />
-              <div class="flex-grow">
-                <h3 class="font-medium text-lg">
-                  {{ product.productname }}
-                  <span v-if="product.isClosestMatch" class="ml-2 text-blue-600 text-sm font-normal">Best match</span>
-                  <span v-if="product.isCheapest" class="ml-2 text-green-600 text-sm font-normal">Best price</span>
-                </h3>
-                <div class="text-sm text-gray-600 mt-1">
-                  <p class="flex items-center gap-2">
-                    <span class="font-medium">Price:</span> 
-                    <span>${{ product.current_price }}</span>
-                    <span class="text-gray-400">|</span>
-                    <span class="font-medium">Unit:</span>
-                    <span>${{ product.unit_price }}/{{ product.unit_name }}</span>
-                  </p>
-                  <p class="flex items-center gap-2">
-                    <span class="font-medium">Size:</span>
-                    <span>{{ product.size }}</span>
-                    <span class="text-gray-400">|</span>
-                    <span class="font-medium">Shop:</span>
-                    <span>{{ product.source_site }}</span>
-                  </p>
+              <div class="flex items-center space-x-4 flex-grow">
+                <img :src="product.image_url" alt="Product Image" class="w-16 h-16 object-cover rounded" />
+                <div class="flex-grow">
+                  <h3 class="font-medium">
+                    {{ product.productname }}
+                    <span v-if="product.isClosestMatch" class="ml-2 text-blue-600 text-sm font-normal">Best match</span>
+                    <span v-if="product.isCheapest" class="ml-2 text-green-600 text-sm font-normal">Best price</span>
+                  </h3>
+                  <div class="text-sm text-gray-600 mt-1">
+                    <p class="flex items-center gap-2">
+                      <span class="font-medium">Price:</span> 
+                      <span>${{ product.current_price }}</span>
+                      <span class="text-gray-400">|</span>
+                      <span class="font-medium">Unit:</span>
+                      <span>${{ product.unit_price }}/{{ product.unit_name }}</span>
+                    </p>
+                    <p class="flex items-center gap-2">
+                      <span class="font-medium">Size:</span>
+                      <span>{{ product.size }}</span>
+                      <span class="text-gray-400">|</span>
+                      <span class="font-medium">Shop:</span>
+                      <span>{{ product.source_site }}</span>
+                    </p>
+                  </div>
                 </div>
               </div>
               <button
                 @click="quickAddToList(product)"
-                class="py-2 px-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors duration-200 text-sm"
+                class="py-1 px-2 sm:py-2 sm:px-4 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors duration-200 text-xs sm:text-base"
               >
                 Add to List
               </button>
@@ -110,15 +112,21 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { createListResource } from 'frappe-ui';
 import * as XLSX from 'xlsx';
 import fuzzysort from 'fuzzysort';
+import SearchBar from '../components/SearchBar2.vue';
+import ProductList from '../components/ProductList2.vue';
+import Pagination from '../components/Pagination.vue';
 import ShoppingList from '../components/ShoppingList2.vue';
 
 // State management
+const searchQuery = ref('');
 const quickSearchQuery = ref('');
 const showQuickSearch = ref(false);
 const selectedItems = ref([]);
 const allProducts = ref([]);
+const currentPage = ref(0);
 const isLoading = ref(true);
 const showShoppingList = ref(true);
+const pageSize = 10;
 
 // Product resource
 const products = createListResource({
@@ -132,7 +140,9 @@ const products = createListResource({
     'image_url',
     'unit_price',
     'unit_name',
+    'original_unit_quantity',
     'current_price',
+    'price_history',
     'last_updated',
   ],
   orderBy: 'last_updated desc',
@@ -178,6 +188,31 @@ const sortedSearchResults = computed(() => {
     isClosestMatch: product.score === results[0].score,
     isCheapest: product.unit_price === cheapestProduct.unit_price
   }));
+});
+
+// Main search computed properties
+const filteredProducts = computed(() => {
+  const query = searchQuery.value.trim().toLowerCase();
+  let results = allProducts.value;
+
+  if (query) {
+    results = fuzzysort.go(query, results, {
+      keys: ['productname', 'source_site'],
+      threshold: -1000,
+      all: true,
+    }).map(result => result.obj);
+  }
+
+  return results;
+});
+
+const totalPages = computed(() => Math.ceil(filteredProducts.value.length / pageSize));
+const hasNextPage = computed(() => currentPage.value < totalPages.value - 1);
+const hasPrevPage = computed(() => currentPage.value > 0);
+
+const paginatedProducts = computed(() => {
+  const start = currentPage.value * pageSize;
+  return filteredProducts.value.slice(start, start + pageSize);
 });
 
 // Quick search methods
@@ -264,6 +299,18 @@ const exportToXLS = () => {
   }
 };
 
+const nextPage = () => {
+  if (hasNextPage.value) currentPage.value++;
+};
+
+const prevPage = () => {
+  if (hasPrevPage.value) currentPage.value--;
+};
+
+const performSearch = () => {
+  currentPage.value = 0;
+};
+
 // Watch for data changes
 watch(products, (newData) => {
   allProducts.value = (newData?.data || []).map((product) => ({
@@ -272,6 +319,10 @@ watch(products, (newData) => {
   }));
   isLoading.value = false;
 });
+
+watch(selectedItems, (newItems) => {
+  saveCurrentList();
+}, { deep: true });
 
 // Click outside to close quick search
 const handleClickOutside = (event) => {
@@ -288,6 +339,12 @@ onMounted(async () => {
     const savedList = localStorage.getItem('shoppingList');
     if (savedList) {
       const parsedList = JSON.parse(savedList);
+      for (const item of parsedList) {
+        const fullProduct = allProducts.value.find(product => product.name === item.name);
+        if (fullProduct) {
+          item.productname = fullProduct.productname;
+        }
+      }
       selectedItems.value = parsedList;
     }
 
