@@ -1,14 +1,8 @@
 <template>
   <div class="bg-gray-50 min-h-screen">
     <!-- Title Section -->
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 py-6 flex flex-col sm:flex-row items-center justify-between">
-      <h1 class="text-3xl font-bold text-gray-800 mb-4 sm:mb-0">Besty</h1>
-      <button
-        @click="showShoppingList = !showShoppingList"
-        class="py-2 px-4 bg-black text-white rounded-lg transition-colors duration-200 hover:bg-gray-800"
-      >
-        {{ showShoppingList ? 'Hide Shopping List' : 'Show Shopping List' }}
-      </button>
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 py-6">
+      <h1 class="text-3xl font-bold text-gray-800">Besty</h1>
     </div>
 
     <!-- Loading State -->
@@ -49,32 +43,32 @@
             <div 
               v-for="product in sortedSearchResults" 
               :key="product.name"
-              class="flex items-center justify-between p-4 hover:bg-gray-50 rounded-lg border border-gray-100"
+              class="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 hover:bg-gray-50 rounded-lg border border-gray-100 gap-4"
               :class="{
                 'bg-blue-50 border-blue-200': product.isClosestMatch,
                 'bg-green-50 border-green-200': product.isCheapest
               }"
             >
-              <div class="flex items-center space-x-4">
+              <div class="flex items-start space-x-4">
                 <img :src="product.image_url" alt="Product Image" class="w-16 h-16 object-cover rounded" />
-                <div class="flex-grow">
-                  <h3 class="font-medium">
+                <div class="flex-grow min-w-0">
+                  <h3 class="font-medium truncate">
                     {{ product.productname }}
                     <span v-if="product.isClosestMatch" class="ml-2 text-blue-600 text-sm font-normal">Best match</span>
                     <span v-if="product.isCheapest" class="ml-2 text-green-600 text-sm font-normal">Best price</span>
                   </h3>
                   <div class="text-sm text-gray-600 mt-1">
-                    <p class="flex items-center gap-2">
+                    <p class="flex flex-wrap items-center gap-2">
                       <span class="font-medium">Price:</span> 
                       <span>${{ product.current_price }}</span>
-                      <span class="text-gray-400">|</span>
+                      <span class="text-gray-400 hidden sm:inline">|</span>
                       <span class="font-medium">Unit:</span>
                       <span>${{ product.unit_price }}/{{ product.unit_name }}</span>
                     </p>
-                    <p class="flex items-center gap-2">
+                    <p class="flex flex-wrap items-center gap-2">
                       <span class="font-medium">Size:</span>
                       <span>{{ product.size }}</span>
-                      <span class="text-gray-400">|</span>
+                      <span class="text-gray-400 hidden sm:inline">|</span>
                       <span class="font-medium">Shop:</span>
                       <span>{{ product.source_site }}</span>
                     </p>
@@ -83,7 +77,7 @@
               </div>
               <button
                 @click="quickAddToList(product)"
-                class="py-2 px-4 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors duration-200"
+                class="py-2 px-4 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors duration-200 text-sm whitespace-nowrap"
               >
                 Add to List
               </button>
@@ -94,7 +88,6 @@
         <!-- Shopping List -->
         <div :class="{ 'pointer-events-none opacity-50': showQuickSearch }">
           <ShoppingList
-            :show="showShoppingList"
             :items="selectedItems"
             @update:items="updateItems"
             @remove-item="removeFromList"
@@ -125,7 +118,6 @@ const selectedItems = ref([]);
 const allProducts = ref([]);
 const currentPage = ref(0);
 const isLoading = ref(true);
-const showShoppingList = ref(true);
 const pageSize = 10;
 
 // Product resource
