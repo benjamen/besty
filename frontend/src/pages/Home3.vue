@@ -83,7 +83,7 @@
               </div>
               <button
                 @click="quickAddToList(product)"
-                class="py-2 px-4 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors duration-200"
+                class="py-1 px-2 sm:py-2 sm:px-4 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors duration-200 text-xs sm:text-base"
               >
                 Add to List
               </button>
