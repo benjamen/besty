@@ -46,7 +46,7 @@
           class="absolute top-16 left-0 right-0 bg-white rounded-lg shadow-lg border border-gray-200 z-10 max-h-96 overflow-y-auto"
         >
           <div class="p-4 space-y-4">
-            <div 
+                        <div 
               v-for="product in sortedSearchResults" 
               :key="product.name"
               class="flex items-center justify-between p-4 hover:bg-gray-50 rounded-lg border border-gray-100"
@@ -55,7 +55,7 @@
                 'bg-green-50 border-green-200': product.isCheapest
               }"
             >
-              <div class="flex items-center space-x-4">
+              <div class="flex items-center space-x-4 flex-grow">
                 <img :src="product.image_url" alt="Product Image" class="w-16 h-16 object-cover rounded" />
                 <div class="flex-grow">
                   <h3 class="font-medium">
