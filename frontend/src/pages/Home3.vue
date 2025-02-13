@@ -47,48 +47,49 @@
         >
           <div class="p-4 space-y-4">
                         <div 
-              v-for="product in sortedSearchResults" 
-              :key="product.name"
-              class="flex items-center justify-between p-4 hover:bg-gray-50 rounded-lg border border-gray-100"
-              :class="{
-                'bg-blue-50 border-blue-200': product.isClosestMatch,
-                'bg-green-50 border-green-200': product.isCheapest
-              }"
-            >
-              <div class="flex items-center space-x-4 flex-grow">
-                <img :src="product.image_url" alt="Product Image" class="w-16 h-16 object-cover rounded" />
-                <div class="flex-grow">
-                  <h3 class="font-medium">
-                    {{ product.productname }}
-                    <span v-if="product.isClosestMatch" class="ml-2 text-blue-600 text-sm font-normal">Best match</span>
-                    <span v-if="product.isCheapest" class="ml-2 text-green-600 text-sm font-normal">Best price</span>
-                  </h3>
-                  <div class="text-sm text-gray-600 mt-1">
-                    <p class="flex items-center gap-2">
-                      <span class="font-medium">Price:</span> 
-                      <span>${{ product.current_price }}</span>
-                      <span class="text-gray-400">|</span>
-                      <span class="font-medium">Unit:</span>
-                      <span>${{ product.unit_price }}/{{ product.unit_name }}</span>
-                    </p>
-                    <p class="flex items-center gap-2">
-                      <span class="font-medium">Size:</span>
-                      <span>{{ product.size }}</span>
-                      <span class="text-gray-400">|</span>
-                      <span class="font-medium">Shop:</span>
-                      <span>{{ product.source_site }}</span>
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <button
-                @click="quickAddToList(product)"
-                class="py-1 px-2 sm:py-2 sm:px-4 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors duration-200 text-xs sm:text-base"
-              >
-                Add to List
-              </button>
-            </div>
-          </div>
+                            v-for="product in sortedSearchResults" 
+                            :key="product.name"
+                            class="flex items-start justify-between p-4 hover:bg-gray-50 rounded-lg border border-gray-100"
+                            :class="{
+                              'bg-blue-50 border-blue-200': product.isClosestMatch,
+                              'bg-green-50 border-green-200': product.isCheapest
+                            }"
+                          >
+                            <div class="flex items-center space-x-4 flex-grow">
+                              <img :src="product.image_url" alt="Product Image" class="w-16 h-16 object-cover rounded" />
+                              <div class="flex-grow">
+                                <h3 class="font-medium">
+                                  {{ product.productname }}
+                                  <span v-if="product.isClosestMatch" class="ml-2 text-blue-600 text-sm font-normal">Best match</span>
+                                  <span v-if="product.isCheapest" class="ml-2 text-green-600 text-sm font-normal">Best price</span>
+                                </h3>
+                                <div class="text-sm text-gray-600 mt-1">
+                                  <p class="flex items-center gap-2">
+                                    <span class="font-medium">Price:</span> 
+                                    <span>${{ product.current_price }}</span>
+                                    <span class="text-gray-400">|</span>
+                                    <span class="font-medium">Unit:</span>
+                                    <span>${{ product.unit_price }}/{{ product.unit_name }}</span>
+                                  </p>
+                                  <p class="flex items-center gap-2">
+                                    <span class="font-medium">Size:</span>
+                                    <span>{{ product.size }}</span>
+                                    <span class="text-gray-400">|</span>
+                                    <span class="font-medium">Shop:</span>
+                                    <span>{{ product.source_site }}</span>
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                            <div class="ml-4"> <!-- Add margin to separate the button -->
+                              <button
+                                @click="quickAddToList(product)"
+                                class="py-1 px-2 sm:py-2 sm:px-4 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors duration-200 text-xs sm:text-base"
+                              >
+                                Add to List
+                              </button>
+                            </div>
+                          </div>
         </div>
 
         <!-- Shopping List -->
