@@ -3,6 +3,11 @@
     <!-- Title Section -->
     <div class="max-w-4xl mx-auto px-4 sm:px-6 py-6 flex flex-col sm:flex-row items-center justify-between">
       <h1 class="text-3xl font-bold text-gray-800 mb-4 sm:mb-0">Besty</h1>
+            <div class="mt-4 flex justify-between">
+        <button @click="$emit('export')" class="py-2 px-4 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors duration-200">
+          Export to XLS
+        </button>
+      </div>
     </div>
 
     <!-- Loading State -->
