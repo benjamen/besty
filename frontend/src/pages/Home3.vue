@@ -138,7 +138,7 @@ const quickSearchResults = computed(() => {
   return fuzzysort.go(query, allProducts.value, {
     keys: ['productname', 'source_site'],
     threshold: -1000,
-    limit: 5, // Limit to top 5 results
+    limit: 12, // Limit to top 5 results
     all: true,
   }).map(result => result.obj);
 });
