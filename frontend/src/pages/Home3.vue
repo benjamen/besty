@@ -5,7 +5,7 @@
       <h1 class="text-3xl font-bold text-gray-800 mb-4 sm:mb-0">Besty</h1>
             <div class="mt-4 flex justify-between">
         <button @click="exportToXLS()" class="py-2 px-4 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors duration-200">
-          Export to XLS
+          Export List
         </button>
       </div>
     </div>
