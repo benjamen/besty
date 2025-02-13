@@ -49,7 +49,7 @@
             <div 
               v-for="product in sortedSearchResults" 
               :key="product.name"
-              class="flex items-center p-4 hover:bg-gray-50 rounded-lg border border-gray-100"
+              class="flex items-start p-4 hover:bg-gray-50 rounded-lg border border-gray-100 h-24"
               :class="{
                 'bg-blue-50 border-blue-200': product.isClosestMatch,
                 'bg-green-50 border-green-200': product.isCheapest
@@ -81,9 +81,9 @@
               </div>
               <button
                 @click="quickAddToList(product)"
-                class="py-1 px-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors duration-200 text-xs"
+                class="py-2 px-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors duration-200 text-sm"
               >
-                Add
+                Add to List
               </button>
             </div>
           </div>
