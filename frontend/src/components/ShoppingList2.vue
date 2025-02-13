@@ -140,11 +140,6 @@
         </div>
       </div>
 
-      <div class="mt-4 flex justify-between">
-        <button @click="$emit('export')" class="py-2 px-4 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors duration-200">
-          Export to XLS
-        </button>
-      </div>
     </div>
   </div>
 </template>
