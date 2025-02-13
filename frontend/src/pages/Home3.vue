@@ -87,6 +87,7 @@
 
         <!-- Shopping List -->
         <div :class="{ 'pointer-events-none opacity-50': showQuickSearch }">
+          <!-- Display the Shopping List -->
           <ShoppingList
             :items="selectedItems"
             @update:items="updateItems"
@@ -101,80 +102,50 @@
 </template>
 
 <script setup>
+// Imports and State Management
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { createListResource } from 'frappe-ui';
 import * as XLSX from 'xlsx';
 import fuzzysort from 'fuzzysort';
-import SearchBar from '../components/SearchBar2.vue';
-import ProductList from '../components/ProductList2.vue';
-import Pagination from '../components/Pagination.vue';
 import ShoppingList from '../components/ShoppingList2.vue';
 
-// State management
 const searchQuery = ref('');
 const quickSearchQuery = ref('');
 const showQuickSearch = ref(false);
 const selectedItems = ref([]);
 const allProducts = ref([]);
-const currentPage = ref(0);
 const isLoading = ref(true);
-const pageSize = 10;
 
-// Product resource
+// Initialize Products Resource
 const products = createListResource({
   doctype: 'Product Item',
   fields: [
-    'name',
-    'productname',
-    'category',
-    'source_site',
-    'size',
-    'image_url',
-    'unit_price',
-    'unit_name',
-    'original_unit_quantity',
-    'current_price',
-    'price_history',
-    'last_updated',
+    'name', 'productname', 'category', 'source_site', 'size', 'image_url',
+    'unit_price', 'unit_name', 'current_price', 'last_updated'
   ],
   orderBy: 'last_updated desc',
   start: 0,
-  pageLength: 50000,
+  pageLength: 50000
 });
 
-// Quick search results with scoring
+// Computed Properties
 const quickSearchResults = computed(() => {
   const query = quickSearchQuery.value.trim().toLowerCase();
   if (!query) return [];
-  
   const results = fuzzysort.go(query, allProducts.value, {
     keys: ['productname', 'source_site'],
     threshold: -1000,
-    limit: 12,
-    all: true,
+    limit: 12
   });
-
-  return results.map(result => ({
-    ...result.obj,
-    score: result.score
-  }));
+  return results.map(result => ({ ...result.obj, score: result.score }));
 });
 
-// Sort and enhance results with match and price indicators
 const sortedSearchResults = computed(() => {
   if (!quickSearchResults.value.length) return [];
-
-  // Sort by fuzzy search score
-  const results = [...quickSearchResults.value].sort((a, b) => {
-    return b.score - a.score;
-  });
-
-  // Find the cheapest product based on unit price
-  const cheapestProduct = results.reduce((min, current) => {
-    return (current.unit_price < min.unit_price) ? current : min;
-  }, results[0]);
-
-  // Mark the closest match and cheapest product
+  const results = [...quickSearchResults.value].sort((a, b) => b.score - a.score);
+  const cheapestProduct = results.reduce((min, current) => (
+    current.unit_price < min.unit_price ? current : min
+  ), results[0]);
   return results.map(product => ({
     ...product,
     isClosestMatch: product.score === results[0].score,
@@ -182,32 +153,7 @@ const sortedSearchResults = computed(() => {
   }));
 });
 
-// Main search computed properties
-const filteredProducts = computed(() => {
-  const query = searchQuery.value.trim().toLowerCase();
-  let results = allProducts.value;
-
-  if (query) {
-    results = fuzzysort.go(query, results, {
-      keys: ['productname', 'source_site'],
-      threshold: -1000,
-      all: true,
-    }).map(result => result.obj);
-  }
-
-  return results;
-});
-
-const totalPages = computed(() => Math.ceil(filteredProducts.value.length / pageSize));
-const hasNextPage = computed(() => currentPage.value < totalPages.value - 1);
-const hasPrevPage = computed(() => currentPage.value > 0);
-
-const paginatedProducts = computed(() => {
-  const start = currentPage.value * pageSize;
-  return filteredProducts.value.slice(start, start + pageSize);
-});
-
-// Quick search methods
+// Methods
 const closeQuickSearch = () => {
   showQuickSearch.value = false;
   quickSearchQuery.value = '';
@@ -218,30 +164,18 @@ const quickAddToList = (product) => {
   closeQuickSearch();
 };
 
-// Other methods
 const addToList = (product) => {
-  const existingItem = selectedItems.value.find(
-    (item) => item.name === product.name
-  );
-
+  const existingItem = selectedItems.value.find(item => item.name === product.name);
   if (existingItem) {
     existingItem.quantity += product.quantity;
   } else {
     selectedItems.value.push({ ...product, quantity: product.quantity });
   }
-
   saveCurrentList();
 };
 
 const removeFromList = (product) => {
-  selectedItems.value = selectedItems.value.filter(
-    (item) => item.name !== product.name
-  );
-  saveCurrentList();
-};
-
-const updateItems = (newItems) => {
-  selectedItems.value = newItems;
+  selectedItems.value = selectedItems.value.filter(item => item.name !== product.name);
   saveCurrentList();
 };
 
@@ -249,105 +183,15 @@ const saveCurrentList = () => {
   localStorage.setItem('shoppingList', JSON.stringify(selectedItems.value));
 };
 
-const exportToXLS = () => {
-  try {
-    const exportData = [];
-    const groupedItems = selectedItems.value.reduce((groups, item) => {
-      const source = item.source_site;
-      if (!groups[source]) groups[source] = [];
-      groups[source].push(item);
-      return groups;
-    }, {});
-
-    Object.entries(groupedItems).forEach(([source, group]) => {
-      exportData.push({ productname: `=== ${source} ===`, current_price: '', quantity: '', total: '' });
-
-      group.forEach(item => {
-        exportData.push({
-          name: item.name,
-          productname: item.productname,
-          current_price: item.current_price,
-          quantity: item.quantity,
-          total: item.current_price * item.quantity
-        });
-      });
-
-      const groupSubtotal = group.reduce((total, item) => 
-        total + (item.current_price * item.quantity), 0);
-      exportData.push({ productname: 'Subtotal', current_price: '', quantity: '', total: groupSubtotal });
-      exportData.push({ productname: '', current_price: '', quantity: '', total: '' });
-    });
-
-    const totalPrice = selectedItems.value.reduce((total, item) => 
-      total + item.current_price * item.quantity, 0);
-    exportData.push({ productname: 'GRAND TOTAL', current_price: '', quantity: '', total: totalPrice });
-
-    const ws = XLSX.utils.json_to_sheet(exportData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Shopping List');
-    XLSX.writeFile(wb, 'shopping_list.xlsx');
-  } catch (error) {
-    console.error('Error exporting to Excel:', error);
-  }
-};
-
-const nextPage = () => {
-  if (hasNextPage.value) currentPage.value++;
-};
-
-const prevPage = () => {
-  if (hasPrevPage.value) currentPage.value--;
-};
-
-const performSearch = () => {
-  currentPage.value = 0;
-};
-
-// Watch for data changes
+// Watchers
 watch(products, (newData) => {
-  allProducts.value = (newData?.data || []).map((product) => ({
-    ...product, 
-    quantity: 1, 
-  }));
+  allProducts.value = (newData?.data || []).map(product => ({ ...product, quantity: 1 }));
   isLoading.value = false;
 });
 
-watch(selectedItems, (newItems) => {
-  saveCurrentList();
-}, { deep: true });
-
-// Click outside to close quick search
-const handleClickOutside = (event) => {
-  const searchInput = document.querySelector('input[type="text"]');
-  if (showQuickSearch.value && !event.target.closest('.quick-search-container') && event.target !== searchInput) {
-    closeQuickSearch();
-  }
-};
-
 onMounted(async () => {
-  try {
-    document.addEventListener('click', handleClickOutside);
-    
-    const savedList = localStorage.getItem('shoppingList');
-    if (savedList) {
-      const parsedList = JSON.parse(savedList);
-      for (const item of parsedList) {
-        const fullProduct = allProducts.value.find(product => product.name === item.name);
-        if (fullProduct) {
-          item.productname = fullProduct.productname;
-        }
-      }
-      selectedItems.value = parsedList;
-    }
-
-    await products.fetch();
-  } catch (error) {
-    console.error('Error fetching products:', error);
-    isLoading.value = false;
-  }
-});
-
-onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside);
+  await products.fetch();
+  const savedList = localStorage.getItem('shoppingList');
+  if (savedList) selectedItems.value = JSON.parse(savedList);
 });
 </script>
