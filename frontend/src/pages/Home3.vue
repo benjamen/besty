@@ -1,4 +1,3 @@
-<!-- Home.vue-->
 <template>
   <div class="bg-gray-50 min-h-screen">
     <!-- Title Section -->
@@ -54,9 +53,24 @@
             >
               <div class="flex items-center space-x-4">
                 <img :src="product.image_url" alt="Product Image" class="w-16 h-16 object-cover rounded" />
-                <div>
+                <div class="flex-grow">
                   <h3 class="font-medium">{{ product.productname }}</h3>
-                  <p class="text-sm text-gray-600">${{ product.current_price }}</p>
+                  <div class="text-sm text-gray-600 mt-1">
+                    <p class="flex items-center gap-2">
+                      <span class="font-medium">Price:</span> 
+                      <span>${{ product.current_price }}</span>
+                      <span class="text-gray-400">|</span>
+                      <span class="font-medium">Unit:</span>
+                      <span>${{ product.unit_price }}/{{ product.unit_name }}</span>
+                    </p>
+                    <p class="flex items-center gap-2">
+                      <span class="font-medium">Size:</span>
+                      <span>{{ product.size }}</span>
+                      <span class="text-gray-400">|</span>
+                      <span class="font-medium">Shop:</span>
+                      <span>{{ product.source_site }}</span>
+                    </p>
+                  </div>
                 </div>
               </div>
               <button
@@ -81,8 +95,6 @@
           />
         </div>
       </div>
-
-
     </div>
   </div>
 </template>
@@ -138,7 +150,7 @@ const quickSearchResults = computed(() => {
   return fuzzysort.go(query, allProducts.value, {
     keys: ['productname', 'source_site'],
     threshold: -1000,
-    limit: 12, // Limit to top 5 results
+    limit: 12,
     all: true,
   }).map(result => result.obj);
 });
