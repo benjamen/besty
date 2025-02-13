@@ -47,14 +47,22 @@
         >
           <div class="p-4 space-y-4">
             <div 
-              v-for="product in quickSearchResults" 
+              v-for="product in sortedSearchResults" 
               :key="product.name"
               class="flex items-center justify-between p-4 hover:bg-gray-50 rounded-lg border border-gray-100"
+              :class="{
+                'bg-blue-50 border-blue-200': product.isClosestMatch,
+                'bg-green-50 border-green-200': product.isCheapest
+              }"
             >
               <div class="flex items-center space-x-4">
                 <img :src="product.image_url" alt="Product Image" class="w-16 h-16 object-cover rounded" />
                 <div class="flex-grow">
-                  <h3 class="font-medium">{{ product.productname }}</h3>
+                  <h3 class="font-medium">
+                    {{ product.productname }}
+                    <span v-if="product.isClosestMatch" class="ml-2 text-blue-600 text-sm font-normal">Best match</span>
+                    <span v-if="product.isCheapest" class="ml-2 text-green-600 text-sm font-normal">Best price</span>
+                  </h3>
                   <div class="text-sm text-gray-600 mt-1">
                     <p class="flex items-center gap-2">
                       <span class="font-medium">Price:</span> 
@@ -142,17 +150,44 @@ const products = createListResource({
   pageLength: 50000,
 });
 
-// Quick search results
+// Quick search results with scoring
 const quickSearchResults = computed(() => {
   const query = quickSearchQuery.value.trim().toLowerCase();
   if (!query) return [];
   
-  return fuzzysort.go(query, allProducts.value, {
+  const results = fuzzysort.go(query, allProducts.value, {
     keys: ['productname', 'source_site'],
     threshold: -1000,
     limit: 12,
     all: true,
-  }).map(result => result.obj);
+  });
+
+  return results.map(result => ({
+    ...result.obj,
+    score: result.score
+  }));
+});
+
+// Sort and enhance results with match and price indicators
+const sortedSearchResults = computed(() => {
+  if (!quickSearchResults.value.length) return [];
+
+  // Sort by fuzzy search score
+  const results = [...quickSearchResults.value].sort((a, b) => {
+    return b.score - a.score;
+  });
+
+  // Find the cheapest product based on unit price
+  const cheapestProduct = results.reduce((min, current) => {
+    return (current.unit_price < min.unit_price) ? current : min;
+  }, results[0]);
+
+  // Mark the closest match and cheapest product
+  return results.map(product => ({
+    ...product,
+    isClosestMatch: product.score === results[0].score,
+    isCheapest: product.unit_price === cheapestProduct.unit_price
+  }));
 });
 
 // Main search computed properties
