@@ -3,12 +3,6 @@
     <!-- Title Section -->
     <div class="max-w-4xl mx-auto px-4 sm:px-6 py-6 flex flex-col sm:flex-row items-center justify-between">
       <h1 class="text-3xl font-bold text-gray-800 mb-4 sm:mb-0">Besty</h1>
-      <button
-        @click="showShoppingList = !showShoppingList"
-        class="py-2 px-4 bg-black text-white rounded-lg transition-colors duration-200 hover:bg-gray-800"
-      >
-        {{ showShoppingList ? 'Hide Shopping List' : 'Show Shopping List' }}
-      </button>
     </div>
 
     <!-- Loading State -->
