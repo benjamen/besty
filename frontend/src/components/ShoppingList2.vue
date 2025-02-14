@@ -72,11 +72,11 @@
               </h4>
               
               <div class="flex flex-col items-end">
-                <span class="text-sm font-bold text-grey-500">
-                  Not Added: ${{ getGroupTotals(group).notInBasketTotal }}
+                <span class="text-sm text-grey-500">
+                  Not in Basket: ${{ getGroupTotals(group).notInBasketTotal }}
                 </span>
-                <span class="text-sm font-bold text-grey-500">
-                  Add: ${{ getGroupTotals(group).inBasketTotal }}
+                <span class="text-sm text-grey-500">
+                  In Basket: ${{ getGroupTotals(group).inBasketTotal }}
                 </span>
                 <span class="text-lg font-bold text-black-700 mt-1">
                   List Total: ${{ getGroupTotals(group).subtotal }}
