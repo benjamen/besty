@@ -221,7 +221,7 @@ const saveCurrentList = async () => {
       productname: item.productname,
       price: item.current_price,
       quantity: item.quantity,
-      in_basket: item.inBasket ? 'In Basket' : 'Not in Basket',
+      in_basket: item.inbasket ? 'In Basket' : 'Not in Basket',
       doctype: 'Shopping Item',
     }));
 
