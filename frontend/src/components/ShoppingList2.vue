@@ -145,7 +145,6 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import { createListResource, createResource } from 'frappe-ui';
-import { debounce } from 'lodash'; // Import lodash debounce
 
 const props = defineProps({
   show: Boolean,
@@ -163,7 +162,7 @@ const showListSelectionModal = ref(false);
 const newListName = ref('');
 const currentListId = ref('');
 const displayListName = ref('');
-let changesPending = false; // Track if there are pending changes
+let debounceTimer = null; // Timer for debounce
 
 // Resource for shopping lists
 const shoppingLists = createListResource({
@@ -200,8 +199,18 @@ const getGroupSubtotal = (group) => {
   }, 0);
 };
 
-// Debounced save function
-const saveCurrentList = debounce(async () => {
+// Debounce function
+const debounce = (func, delay) => {
+  return (...args) => {
+    if (debounceTimer) clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      func(...args);
+    }, delay);
+  };
+};
+
+// Save current list
+const saveCurrentList = async () => {
   if (!currentListId.value) {
     return;
   }
@@ -240,20 +249,21 @@ const saveCurrentList = debounce(async () => {
       alert('The shopping list has been modified by another user. Please refresh the page.');
     }
   }
-}, 1000); // Adjust the debounce time as needed
+};
+
+// Debounced version of saveCurrentList
+const debouncedSaveCurrentList = debounce(saveCurrentList, 1000); // Adjust the debounce time as needed
 
 // Quantity management functions
 const increaseQuantity = (item) => {
   item.quantity++;
-  changesPending = true; // Mark changes as pending
-  saveCurrentList(); // Call the debounced save function
+  debouncedSaveCurrentList(); // Call the debounced save function
 };
 
 const decreaseQuantity = (item) => {
   if (item.quantity > 1) {
     item.quantity--;
-    changesPending = true; // Mark changes as pending
-    saveCurrentList(); // Call the debounced save function
+    debouncedSaveCurrentList(); // Call the debounced save function
   } else {
     removeItem(item);
   }
@@ -262,8 +272,7 @@ const decreaseQuantity = (item) => {
 // Toggle item in basket status
 const toggleItemInBasket = (item) => {
   item.inBasket = !item.inBasket;
-  changesPending = true; // Mark changes as pending
-  saveCurrentList(); // Call the debounced save function
+  debouncedSaveCurrentList(); // Call the debounced save function
 };
 
 // Remove item from list
@@ -397,8 +406,7 @@ const handleImageError = (event) => {
 
 // Watch for changes in items prop
 watch(() => props.items, async (newItems) => {
-  changesPending = true; // Mark changes as pending
-  saveCurrentList(); // Call the debounced save function
+  debouncedSaveCurrentList(); // Call the debounced save function
 }, { deep: true });
 
 // Fetch the shopping lists on component mount
