@@ -61,7 +61,7 @@
     </div>
 
     <div v-show="show && items.length" class="bg-white p-4 rounded-lg shadow-md">
-      <h3 class="text-xl font-bold text-gray-900">{{ displayListName || 'Untitled List' }}</h3>
+      <h3 class="text-xl font-bold text-black-1000">{{ displayListName || 'Untitled List' }}</h3>
       
       <div v-if="groupedItems" class="space-y-6 mt-4">
         <div v-for="(group, source) in groupedItems" :key="source" class="border-b border-gray-200 pb-4 last:border-0">
@@ -73,8 +73,6 @@
             <div v-else-if="source === 'woolworths.co.nz'" class="bg-green-300 p-2 rounded-lg text-center font-bold">
               Countdown
             </div>
-      
-            <h4 class="text-lg font-semibold text-gray-800 mt-2">{{ source }}</h4>
             
             <div class="flex justify-end mt-2">
               <div class="flex flex-col items-end">
