@@ -385,7 +385,7 @@ const handleListChange = async () => {
               quantity: item.quantity,
               source_site: productInfo ? productInfo.source_site : item.source_site,
               image_url: productInfo ? productInfo.image_url : null,
-              inBasket: item.inBasket || false,
+              inbasket: item.inbasket ? 'In Basket' : 'Not in Basket',
             });
           }
         });
