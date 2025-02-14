@@ -77,7 +77,6 @@
                  :key="item.productname" 
                  class="relative flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-gray-50 rounded-lg shadow-sm"
                  :class="{ 'opacity-60': item.inBasket }">
-              <!-- Improved remove button -->
               <button
                 @click="removeItem(item)"
                 class="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-full bg-red-100 hover:bg-red-200 text-red-600 hover:text-red-700 transition-colors duration-200"
@@ -100,7 +99,6 @@
                 <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
                   <p class="text-sm text-gray-600">Price: ${{ item.current_price }}</p>
                   
-                  <!-- Quantity controls -->
                   <div class="flex items-center space-x-2">
                     <button 
                       @click="decreaseQuantity(item)"
@@ -147,6 +145,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import { createListResource, createResource } from 'frappe-ui';
+import { debounce } from 'lodash'; // Import lodash debounce
 
 const props = defineProps({
   show: Boolean,
@@ -164,6 +163,7 @@ const showListSelectionModal = ref(false);
 const newListName = ref('');
 const currentListId = ref('');
 const displayListName = ref('');
+let changesPending = false; // Track if there are pending changes
 
 // Resource for shopping lists
 const shoppingLists = createListResource({
@@ -200,16 +200,60 @@ const getGroupSubtotal = (group) => {
   }, 0);
 };
 
+// Debounced save function
+const saveCurrentList = debounce(async () => {
+  if (!currentListId.value) {
+    return;
+  }
+
+  try {
+    const formattedItems = props.items.map((item) => ({
+      product: item.name,
+      productname: item.productname,
+      price: item.current_price,
+      quantity: item.quantity,
+      inBasket: item.inBasket || false,
+      doctype: 'Shopping Item',
+    }));
+
+    const shoppingListResource = createResource({
+      url: '/api/method/frappe.client.set_value',
+      params: {
+        doctype: 'Shopping List',
+        name: currentListId.value,
+        fieldname: 'shopping_items',
+        value: formattedItems,
+      },
+    });
+
+    const response = await shoppingListResource.fetch();
+
+    if (!response || !response.name) {
+      console.error('Error saving shopping list:', response);
+      alert('Failed to save shopping list. Please check the console for details.');
+    }
+  } catch (error) {
+    console.error('Error saving shopping list:', error);
+    alert('Failed to save shopping list: ' + error.message);
+    // Handle TimestampMismatchError specifically
+    if (error.message.includes('TimestampMismatchError')) {
+      alert('The shopping list has been modified by another user. Please refresh the page.');
+    }
+  }
+}, 1000); // Adjust the debounce time as needed
+
 // Quantity management functions
 const increaseQuantity = (item) => {
   item.quantity++;
-  saveCurrentList();
+  changesPending = true; // Mark changes as pending
+  saveCurrentList(); // Call the debounced save function
 };
 
 const decreaseQuantity = (item) => {
   if (item.quantity > 1) {
     item.quantity--;
-    saveCurrentList();
+    changesPending = true; // Mark changes as pending
+    saveCurrentList(); // Call the debounced save function
   } else {
     removeItem(item);
   }
@@ -218,26 +262,13 @@ const decreaseQuantity = (item) => {
 // Toggle item in basket status
 const toggleItemInBasket = (item) => {
   item.inBasket = !item.inBasket;
-  saveCurrentList();
+  changesPending = true; // Mark changes as pending
+  saveCurrentList(); // Call the debounced save function
 };
 
 // Remove item from list
 const removeItem = (item) => {
   emit('remove-item', item);
-};
-
-// Merge existing items function
-const mergeExistingItem = (newItem) => {
-  const existingItem = props.items.find(item => 
-    item.name === newItem.name && 
-    item.source_site === newItem.source_site
-  );
-  
-  if (existingItem) {
-    existingItem.quantity += newItem.quantity;
-    return true;
-  }
-  return false;
 };
 
 // Create a new shopping list
@@ -277,44 +308,6 @@ const createList = async () => {
   } catch (error) {
     console.error('Error creating shopping list:', error);
     alert('Failed to create shopping list: ' + error.message);
-  }
-};
-
-// Save current list
-const saveCurrentList = async () => {
-  if (!currentListId.value) {
-    return;
-  }
-
-  try {
-    const formattedItems = props.items.map((item) => ({
-      product: item.name,
-      productname: item.productname,
-      price: item.current_price,
-      quantity: item.quantity,
-      inBasket: item.inBasket || false,
-      doctype: 'Shopping Item',
-    }));
-
-    const shoppingListResource = createResource({
-      url: '/api/method/frappe.client.set_value',
-      params: {
-        doctype: 'Shopping List',
-        name: currentListId.value,
-        fieldname: 'shopping_items',
-        value: formattedItems,
-      },
-    });
-
-    const response = await shoppingListResource.fetch();
-
-    if (!response || !response.name) {
-      console.error('Error saving shopping list:', response);
-      alert('Failed to save shopping list. Please check the console for details.');
-    }
-  } catch (error) {
-    console.error('Error saving shopping list:', error);
-    alert('Failed to save shopping list: ' + error.message);
   }
 };
 
@@ -404,7 +397,8 @@ const handleImageError = (event) => {
 
 // Watch for changes in items prop
 watch(() => props.items, async (newItems) => {
-  await saveCurrentList();
+  changesPending = true; // Mark changes as pending
+  saveCurrentList(); // Call the debounced save function
 }, { deep: true });
 
 // Fetch the shopping lists on component mount
