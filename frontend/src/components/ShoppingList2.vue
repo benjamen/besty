@@ -271,7 +271,7 @@ const decreaseQuantity = (item) => {
 
 // Toggle item in basket status
 const toggleItemInBasket = (item) => {
-  item.inBasket = item.inBasket === 'In Basket' ? 'Not in Basket' : 'In Basket'; // Toggle between states
+  item.inBasket = item.inbasket === 'In Basket' ? 'Not in Basket' : 'In Basket'; // Toggle between states
   debouncedSaveCurrentList(); // Call the debounced save function
 };
 
