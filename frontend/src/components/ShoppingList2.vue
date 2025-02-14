@@ -321,8 +321,11 @@ const createList = async () => {
 };
 
 // Confirm list selection
-const confirmSelection = () => {
+const confirmSelection = async () => {
   if (currentListId.value) {
+    // Fetch and prepare the items when confirming the selection
+    const items = await handleListChange();
+    emit('update:items', items); // Emit the items only here
     showListSelectionModal.value = false;
   } else {
     alert('Please select a list or create a new one.');
@@ -390,8 +393,10 @@ const handleListChange = async () => {
           }
         });
 
+        // Store items in a temporary variable instead of emitting immediately
         const transformedItems = Array.from(itemMap.values());
-        emit('update:items', transformedItems);
+        // Store the transformed items in a ref or variable to emit later
+        return transformedItems; // Return the items instead of emitting
       }
     } catch (error) {
       console.error('Error loading shopping list:', error);
