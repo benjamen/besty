@@ -66,22 +66,33 @@
       <div v-if="groupedItems" class="space-y-6 mt-4">
         <div v-for="(group, source) in groupedItems" :key="source" class="border-b border-gray-200 pb-4 last:border-0">
           <div class="flex flex-col bg-gray-100 p-3 rounded-lg mb-3">
-            <h4 class="text-lg font-semibold text-gray-800">{{ source }}</h4>
-            <div class="flex justify-between mt-2">
-              <span class="text-sm font-bold text-green-500">
-                To Add: ${{ getGroupTotals(group).notInBasketTotal }}
-              </span>
-              <span class="text-sm font-bold text-gray-500">
-                Basket: ${{ getGroupTotals(group).inBasketTotal }}
-              </span>
+            <!-- Conditional Banner -->
+            <div v-if="source === 'paknsave.co.nz'" class="bg-yellow-300 p-2 rounded-lg text-center font-bold">
+              Pak n Save
             </div>
+            <div v-else-if="source === 'woolworths.co.nz'" class="bg-green-300 p-2 rounded-lg text-center font-bold">
+              Countdown
+            </div>
+      
+            <h4 class="text-lg font-semibold text-gray-800 mt-2">{{ source }}</h4>
+            
+            <div class="flex justify-end mt-2">
+              <div class="flex flex-col items-end">
+                <span class="text-sm font-bold text-green-500">
+                  To Add: ${{ getGroupTotals(group).notInBasketTotal }}
+                </span>
+                <span class="text-sm font-bold text-gray-500">
+                  Basket: ${{ getGroupTotals(group).inBasketTotal }}
+                </span>
+              </div>
+            </div>
+      
             <div class="mt-2">
               <span class="text-lg font-bold text-gray-700">
                 Total: ${{ getGroupTotals(group).subtotal }}
               </span>
             </div>
           </div>
-          
           <div class="space-y-2">
             <div v-for="item in group" 
                  :key="item.productname" 
