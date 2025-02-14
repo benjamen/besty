@@ -67,9 +67,15 @@
         <div v-for="(group, source) in groupedItems" :key="source" class="border-b border-gray-200 pb-4 last:border-0">
           <div class="flex justify-between items-center mb-3 bg-gray-100 p-3 rounded-lg">
             <h4 class="text-lg font-semibold text-gray-800">{{ source }}</h4>
-            <span class="text-lg font-bold text-gray-700">
-              Subtotal: ${{ getGroupSubtotal(group).toFixed(2) }}
-            </span>
+              <span class="text-lg font-bold text-gray-700">
+                Subtotal: ${{ getGroupTotals(group).subtotal }}
+              </span>
+              <span class="text-lg font-bold text-gray-700">
+                In Basket Total: ${{ getGroupTotals(group).inBasketTotal }}
+              </span>
+              <span class="text-lg font-bold text-gray-700">
+                Not in Basket Total: ${{ getGroupTotals(group).notInBasketTotal }}
+              </span>
           </div>
           
           <div class="space-y-2">
@@ -184,6 +190,30 @@ const groupedItems = computed(() => {
     return groups;
   }, {});
 });
+
+  // Calculate subtotal for a group and totals for In Basket and Not in Basket
+const getGroupTotals = (group) => {
+  let subtotal = 0;
+  let inBasketTotal = 0;
+  let notInBasketTotal = 0;
+
+  group.forEach(item => {
+    const itemTotal = item.current_price * item.quantity;
+    subtotal += itemTotal;
+
+    if (item.inbasket === 'In Basket') {
+      inBasketTotal += itemTotal;
+    } else {
+      notInBasketTotal += itemTotal;
+    }
+  });
+
+  return {
+    subtotal: subtotal.toFixed(2),
+    inBasketTotal: inBasketTotal.toFixed(2),
+    notInBasketTotal: notInBasketTotal.toFixed(2),
+  };
+};
 
 // Calculate total price
 const totalPrice = computed(() => {
