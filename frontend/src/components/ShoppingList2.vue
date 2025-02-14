@@ -118,14 +118,14 @@
                   <p class="text-sm text-gray-600">Total: ${{ (item.current_price * item.quantity).toFixed(2) }}</p>
                 </div>
               </div>
-              <button
+             <button
                 @click="toggleItemInBasket(item)"
                 class="w-full sm:w-auto py-2 px-4 rounded-lg transition-colors duration-200"
-                :class="item.inBasket ? 
+                :class="item.inbasket === 'In Basket' ? 
                   'bg-gray-500 hover:bg-gray-600 text-white' : 
                   'bg-green-500 hover:bg-green-600 text-white'"
               >
-                {{ item.inBasket ? 'Remove from Basket' : 'Add to Basket' }}
+                {{ item.inbasket === 'In Basket' ? 'Remove from Basket' : 'Add to Basket' }}
               </button>
             </div>
           </div>
@@ -221,7 +221,7 @@ const saveCurrentList = async () => {
       productname: item.productname,
       price: item.current_price,
       quantity: item.quantity,
-      in_basket: item.inbasket ? 'In Basket' : 'Not in Basket',
+      inbasket: item.inbasket ? 'In Basket' : 'Not in Basket',
       doctype: 'Shopping Item',
     }));
 
@@ -271,7 +271,7 @@ const decreaseQuantity = (item) => {
 
 // Toggle item in basket status
 const toggleItemInBasket = (item) => {
-  item.inBasket = item.inbasket === 'In Basket' ? 'Not in Basket' : 'In Basket'; // Toggle between states
+  item.inbasket = item.inbasket === 'In Basket' ? 'Not in Basket' : 'In Basket'; // Toggle between states
   debouncedSaveCurrentList(); // Call the debounced save function
 };
 
