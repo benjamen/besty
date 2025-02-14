@@ -221,7 +221,7 @@ const saveCurrentList = async () => {
       productname: item.productname,
       price: item.current_price,
       quantity: item.quantity,
-      inbasket: item.inbasket === 'In Basket', // Ensure this is a boolean
+      inbasket: item.inbasket === 'In Basket' ? 'In Basket' : 'Not in Basket', // Use string values
       doctype: 'Shopping Item',
     }));
 
