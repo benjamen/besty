@@ -254,23 +254,25 @@ const closeQuickSearch = () => {
 };
 
 const quickAddToList = (product) => {
-  addToList({ ...product, quantity: 1 });
+  addToList({ ...product, quantity: 1 }); // Always add with a quantity of 1
   closeQuickSearch();
 };
 
 // Other methods
 const addToList = (product) => {
   const existingItem = selectedItems.value.find(
-    (item) => item.name === product.name
+    (item) => item.productname === product.productname && item.source_site === product.source_site
   );
 
   if (existingItem) {
-    existingItem.quantity += product.quantity;
+    // If the item already exists, increase its quantity
+    existingItem.quantity += product.quantity; // Assuming product.quantity is always 1 when adding
   } else {
+    // If not found, add the new item with quantity 1
     selectedItems.value.push({ ...product, quantity: product.quantity });
   }
 
-  saveCurrentList();
+  saveCurrentList(); // Save the updated list
 };
 
 const removeFromList = (product) => {
