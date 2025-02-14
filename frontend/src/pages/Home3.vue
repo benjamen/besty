@@ -3,7 +3,7 @@
     <!-- Title Section -->
     <div class="max-w-4xl mx-auto px-4 sm:px-6 py-6 flex flex-col sm:flex-row items-center justify-between">
       <h1 class="text-3xl font-bold text-gray-800 mb-4 sm:mb-0">Besty</h1>
-            <div class="mt-4 flex justify-between">
+      <div class="mt-4 flex justify-between">
         <button @click="exportToXLS()" class="py-2 px-4 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors duration-200">
           Export List
         </button>
@@ -45,47 +45,79 @@
           class="absolute top-16 left-0 right-0 bg-white rounded-lg shadow-lg border border-gray-200 z-10 max-h-96 overflow-y-auto"
         >
           <div class="p-4 space-y-4">
-                        <div 
+            <div 
               v-for="product in sortedSearchResults" 
               :key="product.name"
-              class="flex items-center justify-between p-4 hover:bg-gray-50 rounded-lg border border-gray-100"
+              class="grid grid-cols-1 md:grid-cols-12 gap-4 p-4 rounded-lg border transition-colors duration-200"
               :class="{
                 'bg-blue-50 border-blue-200': product.isClosestMatch,
-                'bg-green-50 border-green-200': product.isCheapest
+                'bg-green-50 border-green-200': product.isCheapest,
+                'border-gray-100 hover:bg-gray-50': !product.isClosestMatch && !product.isCheapest
               }"
             >
-              <div class="flex items-center space-x-4 flex-grow">
-                <img :src="product.image_url" alt="Product Image" class="w-16 h-16 object-cover rounded" />
-                <div class="flex-grow">
-                  <h3 class="font-medium">
-                    {{ product.productname }}
-                    <span v-if="product.isClosestMatch" class="ml-2 text-blue-600 text-sm font-normal">Best match</span>
-                    <span v-if="product.isCheapest" class="ml-2 text-green-600 text-sm font-normal">Best price</span>
-                  </h3>
-                  <div class="text-sm text-gray-600 mt-1">
-                    <p class="flex items-center gap-2">
-                      <span class="font-medium">Price:</span> 
+              <!-- Image Section -->
+              <div class="md:col-span-3 flex justify-center md:justify-start">
+                <img 
+                  :src="product.image_url" 
+                  :alt="product.productname" 
+                  class="w-20 h-20 md:w-24 md:h-24 object-cover rounded"
+                />
+              </div>
+
+              <!-- Product Details Section -->
+              <div class="md:col-span-7">
+                <h3 class="font-medium text-lg flex flex-wrap items-center gap-2">
+                  {{ product.productname }}
+                  <span 
+                    v-if="product.isClosestMatch" 
+                    class="text-blue-600 text-sm font-normal px-2 py-1 bg-blue-50 rounded"
+                  >
+                    Best match
+                  </span>
+                  <span 
+                    v-if="product.isCheapest" 
+                    class="text-green-600 text-sm font-normal px-2 py-1 bg-green-50 rounded"
+                  >
+                    Best price
+                  </span>
+                </h3>
+                
+                <div class="mt-2 space-y-1 text-sm text-gray-600">
+                  <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
+                    <div class="flex items-center gap-1">
+                      <span class="font-medium">Price:</span>
                       <span>${{ product.current_price }}</span>
-                      <span class="text-gray-400">|</span>
+                    </div>
+                    <div class="hidden md:block text-gray-300">|</div>
+                    <div class="flex items-center gap-1">
                       <span class="font-medium">Unit:</span>
                       <span>${{ product.unit_price }}/{{ product.unit_name }}</span>
-                    </p>
-                    <p class="flex items-center gap-2">
+                    </div>
+                  </div>
+                  
+                  <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
+                    <div class="flex items-center gap-1">
                       <span class="font-medium">Size:</span>
                       <span>{{ product.size }}</span>
-                      <span class="text-gray-400">|</span>
+                    </div>
+                    <div class="hidden md:block text-gray-300">|</div>
+                    <div class="flex items-center gap-1">
                       <span class="font-medium">Shop:</span>
                       <span>{{ product.source_site }}</span>
-                    </p>
+                    </div>
                   </div>
                 </div>
               </div>
-              <button
-                @click="quickAddToList(product)"
-                class="py-1 px-2 sm:py-2 sm:px-4 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors duration-200 text-xs sm:text-base"
-              >
-                Add to List
-              </button>
+
+              <!-- Button Section -->
+              <div class="md:col-span-2 flex items-center justify-center md:justify-end">
+                <button
+                  @click="quickAddToList(product)"
+                  class="w-full md:w-auto py-2 px-4 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors duration-200 text-sm"
+                >
+                  Add to List
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -101,8 +133,7 @@
             @saveCurrentList="saveCurrentList"
           />
         </div>
-        <div class="mb-4">
-          </div>
+        <div class="mb-4"></div>
       </div>
     </div>
   </div>
