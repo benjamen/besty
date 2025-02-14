@@ -392,14 +392,14 @@ const handleListChange = async () => {
               quantity: item.quantity,
               source_site: productInfo ? productInfo.source_site : item.source_site,
               image_url: productInfo ? productInfo.image_url : null,
-              inbasket: item.inbasket ? 'In Basket' : 'Not in Basket',
+              // Ensure inbasket is set correctly based on the fetched data
+              inbasket: item.inbasket === 'In Basket' ? 'In Basket' : 'Not in Basket',
             });
           }
         });
 
         // Store items in a temporary variable instead of emitting immediately
         const transformedItems = Array.from(itemMap.values());
-        // Store the transformed items in a ref or variable to emit later
         return transformedItems; // Return the items instead of emitting
       }
     } catch (error) {
@@ -407,7 +407,6 @@ const handleListChange = async () => {
     }
   }
 };
-
 const handleImageError = (event) => {
   console.warn("Image failed to load:", event.target.src);
   event.target.src = "https://placehold.co/100x100/FFFFFF/FFFFFF.png";
