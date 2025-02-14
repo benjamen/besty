@@ -221,7 +221,7 @@ const saveCurrentList = async () => {
       productname: item.productname,
       price: item.current_price,
       quantity: item.quantity,
-      inBasket: item.inBasket || false,
+      in_basket: item.inBasket ? 'In Basket' : 'Not in Basket',
       doctype: 'Shopping Item',
     }));
 
@@ -271,7 +271,7 @@ const decreaseQuantity = (item) => {
 
 // Toggle item in basket status
 const toggleItemInBasket = (item) => {
-  item.inBasket = !item.inBasket;
+  item.inBasket = item.inBasket === 'In Basket' ? 'Not in Basket' : 'In Basket'; // Toggle between states
   debouncedSaveCurrentList(); // Call the debounced save function
 };
 
