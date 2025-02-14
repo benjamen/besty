@@ -277,7 +277,15 @@ const toggleItemInBasket = (item) => {
 
 // Remove item from list
 const removeItem = (item) => {
+  // Emit the remove-item event to notify the parent component
   emit('remove-item', item);
+  
+  // Remove the item from the local items array
+  const index = props.items.findIndex(i => i.productname === item.productname && i.source_site === item.source_site);
+  if (index !== -1) {
+    props.items.splice(index, 1); // Remove the item from the array
+    debouncedSaveCurrentList(); // Save the updated list
+  }
 };
 
 // Create a new shopping list
