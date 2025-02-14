@@ -93,7 +93,7 @@
               />
 
               <div class="flex-1 mb-2 sm:mb-0 ml-4">
-                <strong class="text-lg block sm:inline" :class="{ 'line-through': item.inBasket }">
+                <strong class="text-lg block sm:inline" :class="{ 'line-through': item.inbasket }">
                   {{ item.productname }}
                 </strong>
                 <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
