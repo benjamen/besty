@@ -67,14 +67,14 @@
         <div v-for="(group, source) in groupedItems" :key="source" class="border-b border-gray-200 pb-4 last:border-0">
           <div class="flex justify-between items-center mb-3 bg-gray-100 p-3 rounded-lg">
             <h4 class="text-lg font-semibold text-gray-800">{{ source }}</h4>
-              <span class="text-lg font-bold text-gray-700">
-                Subtotal: ${{ getGroupTotals(group).subtotal }}
+              <span class="text-lg font-bold text-gray-400">
+                Not in Basket: ${{ getGroupTotals(group).notInBasketTotal }}
+              </span>
+              <span class="text-lg font-bold text-gray-400">
+                Basket: ${{ getGroupTotals(group).inBasketTotal }}
               </span>
               <span class="text-lg font-bold text-gray-700">
-                In Basket Total: ${{ getGroupTotals(group).inBasketTotal }}
-              </span>
-              <span class="text-lg font-bold text-gray-700">
-                Not in Basket Total: ${{ getGroupTotals(group).notInBasketTotal }}
+                Total: ${{ getGroupTotals(group).subtotal }}
               </span>
           </div>
           
