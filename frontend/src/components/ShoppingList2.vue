@@ -221,7 +221,7 @@ const saveCurrentList = async () => {
       productname: item.productname,
       price: item.current_price,
       quantity: item.quantity,
-      inbasket: item.inbasket ? 'In Basket' : 'Not in Basket',
+      inbasket: item.inbasket === 'In Basket', // Ensure this is a boolean
       doctype: 'Shopping Item',
     }));
 
@@ -244,10 +244,6 @@ const saveCurrentList = async () => {
   } catch (error) {
     console.error('Error saving shopping list:', error);
     alert('Failed to save shopping list: ' + error.message);
-    // Handle TimestampMismatchError specifically
-    if (error.message.includes('TimestampMismatchError')) {
-      alert('The shopping list has been modified by another user. Please refresh the page.');
-    }
   }
 };
 
