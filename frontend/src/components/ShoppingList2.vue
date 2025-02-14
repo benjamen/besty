@@ -65,17 +65,21 @@
       
       <div v-if="groupedItems" class="space-y-6 mt-4">
         <div v-for="(group, source) in groupedItems" :key="source" class="border-b border-gray-200 pb-4 last:border-0">
-          <div class="flex justify-between items-center mb-3 bg-gray-100 p-3 rounded-lg">
+          <div class="flex flex-col bg-gray-100 p-3 rounded-lg mb-3">
             <h4 class="text-lg font-semibold text-gray-800">{{ source }}</h4>
+            <div class="flex justify-between mt-2">
               <span class="text-sm font-bold text-green-500">
-                To add: ${{ getGroupTotals(group).notInBasketTotal }}
+                To Add: ${{ getGroupTotals(group).notInBasketTotal }}
               </span>
-               <span class="text-sm font-bold text-gray-500">
-               Basket: ${{ getGroupTotals(group).inBasketTotal }}
+              <span class="text-sm font-bold text-gray-500">
+                Basket: ${{ getGroupTotals(group).inBasketTotal }}
               </span>
-              <span class="text-lg font-bold text-black-700">
+            </div>
+            <div class="mt-2">
+              <span class="text-lg font-bold text-gray-700">
                 Total: ${{ getGroupTotals(group).subtotal }}
               </span>
+            </div>
           </div>
           
           <div class="space-y-2">
