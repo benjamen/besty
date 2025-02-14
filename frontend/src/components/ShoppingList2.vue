@@ -76,7 +76,7 @@
             <div v-for="item in group" 
                  :key="item.productname" 
                  class="relative flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-gray-50 rounded-lg shadow-sm"
-                 :class="{ 'opacity-60': item.inBasket }">
+                 :class="{ 'opacity-60': item.inbasket === 'In Basket' }">
               <button
                 @click="removeItem(item)"
                 class="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-full bg-red-100 hover:bg-red-200 text-red-600 hover:text-red-700 transition-colors duration-200"
@@ -93,7 +93,7 @@
               />
 
               <div class="flex-1 mb-2 sm:mb-0 ml-4">
-                <strong class="text-lg block sm:inline" :class="{ 'line-through': item.inbasket }">
+                 <strong class="text-lg block sm:inline" :class="{ 'line-through': item.inbasket === 'In Basket' }">
                   {{ item.productname }}
                 </strong>
                 <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
